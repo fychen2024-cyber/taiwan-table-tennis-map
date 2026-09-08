@@ -170,6 +170,21 @@
     .flag-marker .marker-label { fill: var(--ink); font-size: 11px; font-weight: 900; text-anchor: middle; }
     .flag-marker .count-badge { fill: var(--ink); }
     .flag-marker .count-text { fill: #fff; font-size: 9px; font-weight: 900; text-anchor: middle; }
+    .flag-marker .district-map-label {
+      fill: #143e33;
+      font-size: 14px;
+      font-weight: 950;
+      text-anchor: middle;
+      paint-order: stroke fill;
+      stroke: #fff;
+      stroke-width: 4px;
+      stroke-linejoin: round;
+      stroke-linecap: round;
+      letter-spacing: 1px;
+      user-select: none;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .18));
+    }
+    .flag-marker:hover .district-map-label { fill: var(--accent-dark); }
 
     .members-card { min-height: 0; display: flex; flex-direction: column; overflow: visible; }
     .members-head { padding: 20px 20px 14px; border-bottom: 1px solid var(--line); }
@@ -760,6 +775,7 @@
     const uniqueValues = key => [...new Set(members.map(member => member[key]).filter(value => value && value !== "未填"))].sort((a, b) => a.localeCompare(b, "zh-Hant"));
     const displayValue = value => (!value || value === "未填") ? "—" : value;
     const initial = name => Array.from(name || "球")[0];
+    const getDistrictDisplayName = district => (!district ? "" : district.length <= 2 ? district : district.replace(/(區|鄉|鎮|市)$/, ""));
 
     function createChoice(containerId, values, type, name, onChange, allLabel) {
       const container = document.getElementById(containerId);
@@ -979,6 +995,10 @@
         const g = makeSvg("g", { class: "flag-marker", transform: `translate(${position[0]} ${position[1]}) scale(${1 / zoom})`, tabindex: "0", role: "button", "aria-label": `${city}：${cityMembers.map(m => m.name).join("、")}` });
         g.dataset.x = position[0];
         g.dataset.y = position[1];
+        const districtName = getDistrictDisplayName(city);
+        const districtLabel = makeSvg("text", { class: "district-map-label", x: "-26", y: "-10" });
+        districtLabel.textContent = districtName;
+        g.appendChild(districtLabel);
         g.appendChild(makeSvg("line", { class: "pole", x1: "0", y1: "-28", x2: "0", y2: "7" }));
         g.appendChild(makeSvg("rect", { class: "flag-outline", x: "1", y: "-29", width: "51", height: "29", rx: "2" }));
         ["#e94155","#f28b28","#f2d34f","#3aac6d","#3f82d6","#8c57bd"].forEach((color, index) => {
