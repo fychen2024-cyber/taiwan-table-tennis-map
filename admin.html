@@ -689,7 +689,8 @@
       <div class="panel-header">
         <div class="panel-title">
           <span>球友資料清冊</span>
-          <span id="api-status-badge" class="api-status-badge api-offline">檢查中...</span>
+          <span id="api-status-badge" class="api-status-badge api-offline" style="cursor: pointer;" title="點擊設定或綁定 Google 試算表 API">檢查中...</span>
+          <button type="button" class="btn btn-outline" id="btn-config-api" style="padding: 3px 8px; font-size: 11px; margin-left: 6px;">🔗 綁定/變更雲端API</button>
         </div>
         <div style="font-size: 13px; color: var(--muted);">
           點擊右側操作鈕即可進行<b>修改</b>或<b>刪除</b>
@@ -858,11 +859,11 @@
     // 預設 7 位初始成員（與 index.html 同步）
     const initialDefaultMembers = [
       {"id":1,"name":"阿維","city":"龜山區","county":"桃園市","district":"龜山區","locationRaw":"龜山區","level":"校隊","levelTag":"校隊","freeTime":"晚上","role":"不分","single":"是","message":"至少開一次團才有後續"},
-      {"id":2,"name":"老貓","city":"區域待確認","county":"苗栗縣","district":"","locationRaw":"苗栗","level":"系隊上","levelTag":"系隊上","freeTime":"平日晚上/週末","role":"不分","single":"是","message":"打好玩的但希望不要太雷"},
-      {"id":3,"name":"打球好玩","city":"北區","county":"臺南市","district":"北區","locationRaw":"台南北區","level":"系隊中","levelTag":"系隊中","freeTime":"假日","role":"1","single":"是","message":"希望可以找到頻率相近的球友"},
-      {"id":4,"name":"Ray","city":"新莊區","county":"新北市","district":"新莊區","locationRaw":"新北新莊","level":"系隊中","levelTag":"系隊中","freeTime":"平日晚上","role":"0","single":"是","message":"想開開心心打球，享受流汗"},
-      {"id":5,"name":"廷","city":"東區","county":"臺中市","district":"東區","locationRaw":"台中市東區","level":"系隊中","levelTag":"系隊中","freeTime":"平日晚上、週末全天","role":"不分偏0","single":"是","message":"目前程度大概系隊中階，想要提升到中高階，有興趣的朋友可以一起練球！"},
-      {"id":6,"name":"皮皮","city":"士林區","county":"臺北市","district":"士林區","locationRaw":"台北市士林區","level":"系隊中","levelTag":"系隊中","freeTime":"五、六日","role":"0","single":"否","message":"休閒運動交友，認識志同道合的朋友"},
+      {"id":2,"name":"老貓","city":"區域待確認","county":"苗栗縣","district":"","locationRaw":"苗栗","level":"從未加過隊或上過課，無程度，只是想運動而已","levelTag":"未分類","freeTime":"週六日，週六比較好","role":"不分","single":"是","message":"其實我是想要輕鬆打，但有程度的人或許想法不一樣。"},
+      {"id":3,"name":"Casper","city":"新豐鄉","county":"新竹縣","district":"新豐鄉","locationRaw":"新竹縣新豐鄉（明新科大附近","level":"不專業系隊","levelTag":"未分類","freeTime":"週末","role":"偏零","single":"是","message":""},
+      {"id":4,"name":"Nick","city":"中正區","county":"臺北市","district":"中正區","locationRaw":"台北市中正區","level":"歡樂組XD","levelTag":"未分類","freeTime":"禮拜一","role":"Side ","single":"是","message":""},
+      {"id":5,"name":"阿偉","city":"樹林區","county":"新北市","district":"樹林區","locationRaw":"樹林區","level":"系隊中等","levelTag":"未分類","freeTime":"晚上或假日","role":"0","single":"是","message":"找喜歡打桌球的伴侶"},
+      {"id":6,"name":"陶德","city":"內湖區","county":"臺北市","district":"內湖區","locationRaw":"內湖","level":"可連續推擋","levelTag":"未分類","freeTime":"平日晚上、星期六","role":"side","single":"否","message":"很開心認識大家，好久沒打桌球了，希望有機會一起打桌球"},
       {"id":7,"name":"奶茶","city":"三峽區","county":"新北市","district":"三峽區","locationRaw":"三峽","level":"系隊中","levelTag":"系隊中","freeTime":"六日下午","role":"000","single":"是","message":"歡樂打桌球，打桌球真歡樂"}
     ];
 
@@ -1022,9 +1023,10 @@
       // 讀取 Google 試算表 API
       let cloudList = [];
       let isCloudConnected = false;
-      if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== "") {
+      const currentApiUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem("table_tennis_api_url");
+      if (currentApiUrl && currentApiUrl.trim() !== "") {
         try {
-          const resp = await fetch(window.APP_CONFIG.API_URL, { method: 'GET' });
+          const resp = await fetch(currentApiUrl, { method: 'GET' });
           if (resp.ok) {
             const result = await resp.json();
             const list = Array.isArray(result) ? result : (result.data || []);
@@ -1283,7 +1285,7 @@
       // 2. 同步至 Google Sheets API (若有設定)
       if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== '') {
         try {
-          await fetch(window.APP_CONFIG.API_URL, {
+          await fetch(currentApiUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1456,6 +1458,70 @@
 
     // 檢查登入狀態
     checkAuth();
+
+    // 綁定 API 彈窗處理
+    const apiModal = document.getElementById('api-config-modal');
+    function getActiveApiUrl() {
+      return (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem('table_tennis_api_url') || '';
+    }
+
+    function openApiModal() {
+      document.getElementById('input-api-url').value = getActiveApiUrl();
+      apiModal.classList.add('active');
+    }
+    function closeApiModal() {
+      apiModal.classList.remove('active');
+    }
+
+    const btnConfigApi = document.getElementById('btn-config-api');
+    if (btnConfigApi) btnConfigApi.addEventListener('click', openApiModal);
+    const apiStatusBadge = document.getElementById('api-status-badge');
+    if (apiStatusBadge) apiStatusBadge.addEventListener('click', openApiModal);
+
+    document.getElementById('btn-close-api-modal').addEventListener('click', closeApiModal);
+    document.getElementById('btn-save-api').addEventListener('click', () => {
+      const url = document.getElementById('input-api-url').value.trim();
+      if (url) {
+        localStorage.setItem('table_tennis_api_url', url);
+        if (window.APP_CONFIG) window.APP_CONFIG.API_URL = url;
+        showToast('✅ 雲端 API 已儲存並連線');
+      }
+      closeApiModal();
+      loadMembers(true);
+    });
+    document.getElementById('btn-clear-api').addEventListener('click', () => {
+      localStorage.removeItem('table_tennis_api_url');
+      if (window.APP_CONFIG) window.APP_CONFIG.API_URL = '';
+      showToast('已切換為純本機模式');
+      closeApiModal();
+      loadMembers(true);
+    });
   </script>
+
+  <!-- API 網址設定彈窗 -->
+  <div id="api-config-modal" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-head">
+        <h3>🔗 綁定 Google 試算表雲端 API</h3>
+        <button type="button" class="modal-close" id="btn-close-api-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+          綁定 Google Apps Script 網頁應用程式網址後，新成員資料與後台新增、修改、刪除將<b>永久儲存於雲端試算表</b>，不再因清除瀏覽器快取而遺失！
+        </p>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">Google Apps Script Web App 網址：</label>
+          <input type="url" id="input-api-url" class="form-control" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+        </div>
+        <p style="font-size: 12px; color: var(--muted);">
+          還沒建置？請參考專案中的《Google試算表後端建置教學.md》只需 3 分鐘即可完成！
+        </p>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" id="btn-clear-api">清除綁定</button>
+        <button type="button" class="btn btn-primary" id="btn-save-api">儲存並連線</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

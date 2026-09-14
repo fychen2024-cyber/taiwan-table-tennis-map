@@ -989,9 +989,10 @@
       }
 
       // 2. 雲端 Google Sheets API
-      if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== "") {
+      const currentApiUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem("table_tennis_api_url");
+      if (currentApiUrl && currentApiUrl.trim() !== "") {
         try {
-          const resp = await fetch(window.APP_CONFIG.API_URL, { method: "GET" });
+          const resp = await fetch(currentApiUrl, { method: "GET" });
           if (resp.ok) {
             const result = await resp.json();
             const remoteList = Array.isArray(result) ? result : (result.data || []);
