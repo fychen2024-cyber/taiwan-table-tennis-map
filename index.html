@@ -356,6 +356,9 @@
         <svg id="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         <span id="refresh-text">重新同步</span>
       </button>
+      <a href="admin.html" class="action-btn refresh-btn" title="後台管理系統（新增、修改、刪除資料）">
+        ⚙️ 後台管理
+      </a>
     </div>
   </header>
 
@@ -964,7 +967,13 @@
       if (refreshBtn) refreshBtn.classList.add("spinning");
       if (refreshText && showFeedback) refreshText.textContent = "同步中...";
 
-      let currentList = [...defaultMembers];
+      // 取得被標記刪除的預設 ID
+      let deletedDefaultIds = new Set();
+      try {
+        const rawDel = localStorage.getItem("table_tennis_deleted_default_ids");
+        if (rawDel) deletedDefaultIds = new Set(JSON.parse(rawDel));
+      } catch (e) {}
+      let currentList = defaultMembers.filter(m => !deletedDefaultIds.has(m.id));
 
       // 1. 本機暫存 (localStorage)
       try {

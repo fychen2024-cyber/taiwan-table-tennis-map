@@ -6,5 +6,8 @@ window.APP_CONFIG = {
   API_URL: "",
   
   // LINE 社群邀請連結
-  LINE_COMMUNITY_URL: "https://line.me/ti/g2/MLL932ZYs6ffmsQQ3zChMOY8DhusjZfaP_GP0w?utm_source=invitation&utm_medium=link_copy&utm_campaign=default"
+  LINE_COMMUNITY_URL: "https://line.me/ti/g2/MLL932ZYs6ffmsQQ3zChMOY8DhusjZfaP_GP0w?utm_source=invitation&utm_medium=link_copy&utm_campaign=default",
+
+  // 後台管理員密碼（預設為 admin888，可自行修改）
+  ADMIN_PASSWORD: "admin1688"
 };

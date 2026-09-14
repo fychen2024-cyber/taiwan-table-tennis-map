@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>桌球同好地圖 - 後台管理系統</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏓</text></svg>">
+  <script src="config.js"></script>
+  <style>
+    :root {
+      --bg: #f6f5f0;
+      --card-bg: #ffffff;
+      --ink: #1f2d27;
+      --muted: #62726a;
+      --line: #dcd7ce;
+      --accent: #1f7a55;
+      --accent-dark: #145338;
+      --accent-light: #e8f5ef;
+      --danger: #dc3545;
+      --danger-light: #fbebee;
+      --warning: #f59e0b;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, .05);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, .08);
+      --radius: 12px;
+      --font: "Noto Sans TC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Bar */
+    .admin-navbar {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+    .brand-icon {
+      font-size: 24px;
+      line-height: 1;
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-admin {
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: .5px;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: all .2s ease;
+      line-height: 1.2;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--accent-dark);
+      box-shadow: 0 4px 12px rgba(31, 122, 85, .25);
+    }
+    .btn-outline {
+      background: #fff;
+      border-color: var(--line);
+      color: var(--ink);
+    }
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+    .btn-danger-outline {
+      background: #fff;
+      border-color: #f1b0b7;
+      color: var(--danger);
+    }
+    .btn-danger-outline:hover {
+      background: var(--danger-light);
+      border-color: var(--danger);
+    }
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-danger:hover {
+      background: #bd2130;
+    }
+
+    /* Container */
+    .main-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 24px auto;
+      padding: 0 20px 40px;
+      flex: 1;
+    }
+
+    /* Stats Cards */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent-dark);
+    }
+    .stat-desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Controls & Filter Bar */
+    .panel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .api-status-badge {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .api-online {
+      background: #e6f4ea;
+      color: #137333;
+    }
+    .api-offline {
+      background: #fef7e0;
+      color: #b06000;
+    }
+
+    /* Filter Form */
+    .filter-bar {
+      padding: 16px 20px;
+      background: #faf9f6;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .search-input {
+      flex: 1 1 240px;
+      position: relative;
+    }
+    .search-input input {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .search-input input:focus {
+      border-color: var(--accent);
+    }
+    .search-input svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      background: #fff;
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+      max-height: 620px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background: #faf9f6;
+      padding: 12px 16px;
+      font-weight: 700;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+    tr:hover td {
+      background: #fdfbf7;
+    }
+    .col-id { width: 50px; color: var(--muted); font-weight: 700; }
+    .col-name {
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+    .name-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .loc-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #f0eee6;
+      font-size: 12px;
+      font-weight: 600;
+      color: #4a5550;
+      white-space: nowrap;
+    }
+    .level-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .msg-preview {
+      max-width: 240px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--muted);
+    }
+    .source-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .source-default {
+      background: #f1f3f5;
+      color: #6c757d;
+    }
+    .source-custom {
+      background: #d4edda;
+      color: #155724;
+    }
+    .row-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    /* Empty state */
+    .empty-row {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--muted);
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      backdrop-filter: blur(3px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .modal-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background: #fff;
+      border-radius: 16px;
+      max-width: 560px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-md);
+      transform: translateY(12px) scale(.98);
+      transition: transform .2s ease;
+      overflow: hidden;
+    }
+    .modal-backdrop.active .modal-card {
+      transform: translateY(0) scale(1);
+    }
+    .modal-head {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-head h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 4px;
+      border-radius: 6px;
+    }
+    .modal-close:hover {
+      background: #eee;
+    }
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-foot {
+      padding: 16px 24px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #faf9f6;
+    }
+
+    /* Form Fields inside Modal */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .form-label .req {
+      color: var(--danger);
+    }
+    .form-control {
+      padding: 9px 12px;
+      border: 1.5px solid var(--line);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+      background: #fff;
+      font-family: inherit;
+    }
+    .form-control:focus {
+      border-color: var(--accent);
+    }
+    textarea.form-control {
+      resize: vertical;
+      min-height: 70px;
+    }
+    .chip-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .chip {
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      background: #fff;
+      color: var(--muted);
+      transition: all .15s;
+    }
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+    .radio-group {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .radio-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* Auth Screen Overlay */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: #f6f5f0;
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .auth-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      max-width: 400px;
+      width: 100%;
+      padding: 32px 28px;
+      box-shadow: var(--shadow-md);
+      text-align: center;
+    }
+    .auth-icon {
+      font-size: 42px;
+      margin-bottom: 12px;
+    }
+    .auth-card h2 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    .auth-card p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+    .auth-error {
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    /* Spinning Icon */
+    .spinning {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #202b26;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      box-shadow: var(--shadow-md);
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 3000;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all .25s ease;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. 管理員登入密碼驗證遮罩 -->
+  <div id="auth-screen" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-icon">🔐</div>
+      <h2>桌球地圖後台管理</h2>
+      <p>請輸入管理員密碼以進入管理面板</p>
+      <form id="auth-form">
+        <div class="form-group" style="text-align: left; margin-bottom: 14px;">
+          <input type="password" id="auth-password" class="form-control" placeholder="請輸入管理密碼" autofocus required autocomplete="current-password">
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; font-size: 12px; color: var(--muted);">
+          <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="auth-remember" checked>
+            記住登入狀態 (30 天)
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 11px; font-size: 14px;">
+          解鎖進入後台
+        </button>
+        <div id="auth-error" class="auth-error"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. 後台頂部導覽列 -->
+  <header class="admin-navbar">
+    <div class="nav-container">
+      <a href="index.html" class="brand">
+        <span class="brand-icon">🏓</span>
+        <span class="brand-title">桌球同好地圖 <span class="badge-admin">後台管理</span></span>
+      </a>
+      <div class="nav-actions">
+        <button type="button" class="btn btn-primary" id="btn-open-create">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          新增球友
+        </button>
+        <button type="button" class="btn btn-outline" id="btn-refresh">
+          <svg id="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          重新整理
+        </button>
+        <button type="button" class="btn btn-outline" id="btn-export-csv" title="匯出 CSV 試算表備份">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          匯出 CSV
+        </button>
+        <a href="index.html" class="btn btn-outline" target="_blank" title="在新分頁開啟公開地圖">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+          查看地圖
+        </a>
+        <button type="button" class="btn btn-outline" id="btn-logout" title="登出後台">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          登出
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3. 主內容區 -->
+  <main class="main-container">
+    
+    <!-- 數據概覽卡片 -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">總成員人數</div>
+        <div class="stat-value" id="stat-total-count">0</div>
+        <div class="stat-desc">名冊中所有球友數量</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">涵蓋行政區</div>
+        <div class="stat-value" id="stat-district-count">0</div>
+        <div class="stat-desc">已有球友插旗之鄉鎮市區</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">校隊與選手級</div>
+        <div class="stat-value" id="stat-pro-count">0</div>
+        <div class="stat-desc">校隊/甲組/業餘高手人數</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">單身球友</div>
+        <div class="stat-value" id="stat-single-count">0</div>
+        <div class="stat-desc">可自由約球或交友成員</div>
+      </div>
+    </section>
+
+    <!-- 名單管理表格面板 -->
+    <div class="panel-card">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span>球友資料清冊</span>
+          <span id="api-status-badge" class="api-status-badge api-offline">檢查中...</span>
+        </div>
+        <div style="font-size: 13px; color: var(--muted);">
+          點擊右側操作鈕即可進行<b>修改</b>或<b>刪除</b>
+        </div>
+      </div>
+
+      <!-- 搜尋與篩選列 -->
+      <div class="filter-bar">
+        <div class="search-input">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="filter-keyword" placeholder="搜尋姓名、鄉鎮區、想說的話...">
+        </div>
+        <select id="filter-county" class="filter-select">
+          <option value="all">所有縣市</option>
+        </select>
+        <select id="filter-level" class="filter-select">
+          <option value="all">所有程度</option>
+        </select>
+        <select id="filter-single" class="filter-select">
+          <option value="all">單身狀態 (全部)</option>
+          <option value="是">單身 (是)</option>
+          <option value="否">非單身 (否)</option>
+        </select>
+        <button type="button" class="btn btn-outline" id="btn-clear-filters" style="font-size: 12px; padding: 6px 12px;">
+          清除篩選
+        </button>
+      </div>
+
+      <!-- 成員資料表格 -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-id">ID</th>
+              <th>稱呼</th>
+              <th>縣市 / 鄉鎮市區</th>
+              <th>桌球程度</th>
+              <th>較有空時間</th>
+              <th>角色</th>
+              <th>單身</th>
+              <th>想說的話</th>
+              <th style="text-align: right; padding-right: 24px;">操作</th>
+            </tr>
+          </thead>
+          <tbody id="member-table-body">
+            <tr>
+              <td colspan="9" class="empty-row">載入球友資料中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- 4. 新增 / 編輯成員彈窗 (Modal) -->
+  <div id="edit-modal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modal-title">新增球友資料</h3>
+        <button type="button" class="modal-close" id="btn-close-modal">&times;</button>
+      </div>
+      <form id="member-form">
+        <input type="hidden" id="field-id">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">稱呼 / 暱稱 <span class="req">*</span></label>
+              <input type="text" id="field-name" class="form-control" placeholder="例如：阿維、小美" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">角色性向</label>
+              <input type="text" id="field-role" class="form-control" placeholder="不分、1、0、000" value="不分">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">居住縣市 <span class="req">*</span></label>
+              <select id="field-county" class="form-control" required>
+                <option value="">請選擇縣市</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">鄉鎮市區 <span class="req">*</span></label>
+              <select id="field-district" class="form-control" required>
+                <option value="">請先選擇縣市</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">桌球程度 <span class="req">*</span></label>
+            <input type="text" id="field-level" class="form-control" placeholder="請點選下方標籤或直接輸入" required>
+            <div class="chip-wrap" id="chips-level">
+              <button type="button" class="chip" data-val="初學">初學</button>
+              <button type="button" class="chip" data-val="系隊下">系隊下</button>
+              <button type="button" class="chip" data-val="系隊中">系隊中</button>
+              <button type="button" class="chip" data-val="系隊上">系隊上</button>
+              <button type="button" class="chip" data-val="校隊">校隊</button>
+              <button type="button" class="chip" data-val="業餘甲組">業餘甲組</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">較有空時間</label>
+            <input type="text" id="field-freetime" class="form-control" placeholder="例如：平日晚上、六日下午">
+            <div class="chip-wrap" id="chips-freetime">
+              <button type="button" class="chip" data-val="平日晚上">平日晚上</button>
+              <button type="button" class="chip" data-val="週六下午">週六下午</button>
+              <button type="button" class="chip" data-val="週日全天">週日全天</button>
+              <button type="button" class="chip" data-val="週末皆可">週末皆可</button>
+              <button type="button" class="chip" data-val="彈性約打">彈性約打</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">是否單身</label>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="field-single" value="是" checked> 是</label>
+              <label class="radio-label"><input type="radio" name="field-single" value="否"> 否</label>
+              <label class="radio-label"><input type="radio" name="field-single" value="隨緣"> 隨緣</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">想說的話 / 補充備註</label>
+            <textarea id="field-message" class="form-control" placeholder="例如：想找固定球友、歡迎私訊約球"></textarea>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-outline" id="btn-cancel-modal">取消</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-member">儲存資料</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. 刪除確認彈窗 (Delete Confirmation Modal) -->
+  <div id="delete-modal" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-head">
+        <h3 style="color: var(--danger);">確定刪除成員？</h3>
+        <button type="button" class="modal-close" id="btn-close-delete">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 14px; line-height: 1.6;">
+          您確定要將球友「<strong id="delete-target-name" style="color: var(--ink);"></strong>」自資料庫與地圖中移除嗎？
+        </p>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">
+          此操作會同步更新 Google 試算表與地圖顯示。
+        </p>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" id="btn-cancel-delete">取消</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete">確認刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示浮動通知 (Toast) -->
+  <div id="toast" class="toast">
+    <span id="toast-msg">已完成操作</span>
+  </div>
+
+  <script>
+    // 預設 7 位初始成員（與 index.html 同步）
+    const initialDefaultMembers = [
+      {"id":1,"name":"阿維","city":"龜山區","county":"桃園市","district":"龜山區","locationRaw":"龜山區","level":"校隊","levelTag":"校隊","freeTime":"晚上","role":"不分","single":"是","message":"至少開一次團才有後續"},
+      {"id":2,"name":"老貓","city":"區域待確認","county":"苗栗縣","district":"","locationRaw":"苗栗","level":"系隊上","levelTag":"系隊上","freeTime":"平日晚上/週末","role":"不分","single":"是","message":"打好玩的但希望不要太雷"},
+      {"id":3,"name":"打球好玩","city":"北區","county":"臺南市","district":"北區","locationRaw":"台南北區","level":"系隊中","levelTag":"系隊中","freeTime":"假日","role":"1","single":"是","message":"希望可以找到頻率相近的球友"},
+      {"id":4,"name":"Ray","city":"新莊區","county":"新北市","district":"新莊區","locationRaw":"新北新莊","level":"系隊中","levelTag":"系隊中","freeTime":"平日晚上","role":"0","single":"是","message":"想開開心心打球，享受流汗"},
+      {"id":5,"name":"廷","city":"東區","county":"臺中市","district":"東區","locationRaw":"台中市東區","level":"系隊中","levelTag":"系隊中","freeTime":"平日晚上、週末全天","role":"不分偏0","single":"是","message":"目前程度大概系隊中階，想要提升到中高階，有興趣的朋友可以一起練球！"},
+      {"id":6,"name":"皮皮","city":"士林區","county":"臺北市","district":"士林區","locationRaw":"台北市士林區","level":"系隊中","levelTag":"系隊中","freeTime":"五、六日","role":"0","single":"否","message":"休閒運動交友，認識志同道合的朋友"},
+      {"id":7,"name":"奶茶","city":"三峽區","county":"新北市","district":"三峽區","locationRaw":"三峽","level":"系隊中","levelTag":"系隊中","freeTime":"六日下午","role":"000","single":"是","message":"歡樂打桌球，打桌球真歡樂"}
+    ];
+
+    // 全台 22 縣市與 368 鄉鎮市區對照資料
+    const TAIWAN_DATA = {
+      "臺北市": ["中正區","大同區","中山區","松山區","大安區","萬華區","信義區","士林區","北投區","內湖區","南港區","文山區"],
+      "新北市": ["萬里區","金山區","板橋區","汐止區","深坑區","石碇區","瑞芳區","平溪區","雙溪區","貢寮區","新店區","坪林區","烏來區","永和區","中和區","土城區","三峽區","樹林區","鶯歌區","三重區","新莊區","泰山區","林口區","蘆洲區","五股區","八里區","淡水區","三芝區","石門區"],
+      "基隆市": ["仁愛區","信義區","中正區","中山區","安樂區","暖暖區","七堵區"],
+      "桃園市": ["中壢區","平鎮區","龍潭區","楊梅區","新屋區","觀音區","桃園區","龜山區","八德區","大溪區","復興區","大園區","蘆竹區"],
+      "新竹市": ["東區","北區","香山區"],
+      "新竹縣": ["竹北市","湖口鄉","新豐鄉","新埔鎮","關西鎮","芎林鄉","寶山鄉","竹東鎮","五峰鄉","橫山鄉","尖石鄉","北埔鄉","峨眉鄉"],
+      "苗栗縣": ["竹南鎮","頭份市","三灣鄉","南庄鄉","獅潭鄉","後龍鎮","通霄鎮","苑裡鎮","苗栗市","造橋鄉","頭屋鄉","公館鄉","大湖鄉","泰安鄉","銅鑼鄉","三義鄉","西湖鄉","卓蘭鎮"],
+      "臺中市": ["中區","東區","南區","西區","北區","北屯區","西屯區","南屯區","太平區","大里區","霧峰區","烏日區","豐原區","后里區","石岡區","東勢區","和平區","新社區","潭子區","大雅區","神岡區","大肚區","沙鹿區","龍井區","梧棲區","清水區","大甲區","外埔區","大安區"],
+      "彰化縣": ["彰化市","芬園鄉","花壇鄉","秀水鄉","鹿港鎮","福興鄉","線西鄉","和美鎮","伸港鄉","員林市","社頭鄉","永靖鄉","埔心鄉","溪湖鎮","大村鄉","埔鹽鄉","田中鎮","北斗鎮","田尾鄉","埤頭鄉","溪州鄉","竹塘鄉","二林鎮","大城鄉","芳苑鄉","二水鄉"],
+      "南投縣": ["南投市","中寮鄉","草屯鎮","國姓鄉","埔里鎮","仁愛鄉","名間鄉","集集鎮","水里鄉","魚池鄉","信義鄉","竹山鎮","鹿谷鄉"],
+      "雲林縣": ["斗南鎮","大埤鄉","虎尾鎮","土庫鎮","褒忠鄉","東勢鄉","臺西鄉","崙背鄉","麥寮鄉","斗六市","林內鄉","古坑鄉","莿桐鄉","西螺鎮","二崙鄉","北港鎮","水林鄉","口湖鄉","四湖鄉","元長鄉"],
+      "嘉義市": ["東區","西區"],
+      "嘉義縣": ["番路鄉","梅山鄉","竹崎鄉","阿里山鄉","中埔鄉","大埔鄉","水上鄉","鹿草鄉","太保市","朴子市","東石鄉","六腳鄉","新港鄉","民雄鄉","大林鎮","溪口鄉","義竹鄉","布袋鎮"],
+      "臺南市": ["中西區","東區","南區","北區","安平區","安南區","永康區","歸仁區","新化區","左鎮區","玉井區","楠西區","南化區","仁德區","關廟區","龍崎區","官田區","麻豆區","佳里區","西港區","七股區","將軍區","學甲區","北門區","新營區","後壁區","白河區","東山區","六甲區","下營區","柳營區","鹽水區","善化區","大內區","山上區","新市區","安定區"],
+      "高雄市": ["新興區","前金區","苓雅區","鹽埕區","鼓山區","旗津區","前鎮區","三民區","楠梓區","小港區","左營區","仁武區","大社區","岡山區","路竹區","阿蓮區","田寮區","燕巢區","橋頭區","梓官區","彌陀區","永安區","湖內區","鳳山區","大寮區","林園區","鳥松區","大樹區","旗山區","美濃區","六龜區","內門區","杉林區","甲仙區","桃源區","那瑪夏區","茂林區","茄萣區"],
+      "屏東縣": ["屏東市","三地門鄉","霧臺鄉","瑪家鄉","九如鄉","里港鄉","高樹鄉","鹽埔鄉","長治鄉","麟洛鄉","竹田鄉","內埔鄉","萬丹鄉","潮州鎮","泰武鄉","來義鄉","萬巒鄉","崁頂鄉","新埤鄉","南州鄉","林邊鄉","東港鎮","琉球鄉","佳冬鄉","新園鄉","枋寮鄉","枋山鄉","春日鄉","獅子鄉","車城鄉","牡丹鄉","恆春鎮","滿州鄉"],
+      "宜蘭縣": ["宜蘭市","頭城鎮","礁溪鄉","壯圍鄉","員山鄉","羅東鎮","三星鄉","大同鄉","五結鄉","冬山鄉","蘇澳鎮","南澳鄉"],
+      "花蓮縣": ["花蓮市","新城鄉","秀林鄉","吉安鄉","壽豐鄉","鳳林鎮","光復鄉","豐濱鄉","瑞穗鄉","萬榮鄉","玉里鎮","卓溪鄉","富里鄉"],
+      "臺東縣": ["臺東市","綠島鄉","蘭嶼鄉","延平鄉","卑南鄉","鹿野鄉","關山鎮","海端鄉","池上鄉","東河鄉","成功鎮","長濱鄉","太麻里鄉","金峰鄉","大武鄉","達仁鄉"],
+      "澎湖縣": ["馬公市","西嶼鄉","望安鄉","七美鄉","白沙鄉","湖西鄉"],
+      "金門縣": ["金沙鎮","金湖鎮","金寧鄉","金城鎮","烈嶼鄉","烏坵鄉"],
+      "連江縣": ["南竿鄉","北竿鄉","莒光鄉","東引鄉"]
+    };
+
+    // 狀態管理
+    let allMembers = [];
+    let deleteTargetId = null;
+
+    // 1. 密碼驗證管理
+    function checkAuth() {
+      const isSessionAuth = sessionStorage.getItem('table_tennis_admin_auth') === 'true';
+      const isPersistAuth = localStorage.getItem('table_tennis_admin_auth_persist') === 'true';
+      if (isSessionAuth || isPersistAuth) {
+        document.getElementById('auth-screen').style.display = 'none';
+        initAdmin();
+      } else {
+        document.getElementById('auth-screen').style.display = 'flex';
+      }
+    }
+
+    document.getElementById('auth-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const pwd = document.getElementById('auth-password').value.trim();
+      const expectedPwd = (window.APP_CONFIG && window.APP_CONFIG.ADMIN_PASSWORD) ? window.APP_CONFIG.ADMIN_PASSWORD : 'admin1688';
+      const errEl = document.getElementById('auth-error');
+
+      if (pwd === expectedPwd) {
+        sessionStorage.setItem('table_tennis_admin_auth', 'true');
+        if (document.getElementById('auth-remember').checked) {
+          localStorage.setItem('table_tennis_admin_auth_persist', 'true');
+        }
+        document.getElementById('auth-screen').style.display = 'none';
+        showToast('🔓 登入成功');
+        initAdmin();
+      } else {
+        errEl.textContent = '密碼錯誤，請重新輸入（預設密碼為 admin1688）';
+        document.getElementById('auth-password').select();
+      }
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      sessionStorage.removeItem('table_tennis_admin_auth');
+      localStorage.removeItem('table_tennis_admin_auth_persist');
+      location.reload();
+    });
+
+    // 2. 初始化行政區下拉選單
+    function initCountySelects() {
+      const countySelect = document.getElementById('field-county');
+      const filterCountySelect = document.getElementById('filter-county');
+      
+      countySelect.innerHTML = '<option value="">請選擇縣市</option>';
+      filterCountySelect.innerHTML = '<option value="all">所有縣市</option>';
+
+      Object.keys(TAIWAN_DATA).forEach(county => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = county;
+        countySelect.appendChild(opt);
+
+        const filterOpt = document.createElement('option');
+        filterOpt.value = filterOpt.textContent = county;
+        filterCountySelect.appendChild(filterOpt);
+      });
+
+      countySelect.addEventListener('change', () => {
+        updateDistrictDropdown(countySelect.value);
+      });
+    }
+
+    function updateDistrictDropdown(county, selectedDistrict = '') {
+      const districtSelect = document.getElementById('field-district');
+      districtSelect.innerHTML = '<option value="">請選擇鄉鎮市區</option>';
+      if (county && TAIWAN_DATA[county]) {
+        TAIWAN_DATA[county].forEach(dist => {
+          const opt = document.createElement('option');
+          opt.value = opt.textContent = dist;
+          if (dist === selectedDistrict) opt.selected = true;
+          districtSelect.appendChild(opt);
+        });
+      }
+    }
+
+    // 程度/時間快選 Chips
+    document.querySelectorAll('#chips-level .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.getElementById('field-level').value = chip.dataset.val;
+      });
+    });
+    document.querySelectorAll('#chips-freetime .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.getElementById('field-freetime').value = chip.dataset.val;
+      });
+    });
+
+    // 3. 資料載入與整合
+    function normalizeCountyName(county) {
+      if (!county) return "";
+      return county.replace(/^台北市/, "臺北市")
+                   .replace(/^台中市/, "臺中市")
+                   .replace(/^台南市/, "臺南市")
+                   .replace(/^台東縣/, "臺東縣");
+    }
+
+    async function loadMembers(showSyncToast = false) {
+      const refreshIcon = document.getElementById('refresh-icon');
+      if (refreshIcon) refreshIcon.parentElement.classList.add('spinning');
+      const statusBadge = document.getElementById('api-status-badge');
+
+      // 取得被標記刪除的預設 ID
+      let deletedDefaultIds = new Set();
+      try {
+        const rawDel = localStorage.getItem('table_tennis_deleted_default_ids');
+        if (rawDel) deletedDefaultIds = new Set(JSON.parse(rawDel));
+      } catch (e) {}
+
+      // 基礎列表：排除已被刪除的預設成員
+      let baseList = initialDefaultMembers.filter(m => !deletedDefaultIds.has(m.id)).map(m => ({
+        ...m,
+        source: 'default'
+      }));
+
+      // 讀取本機快取
+      let localCustom = [];
+      try {
+        const rawLocal = localStorage.getItem('table_tennis_custom_members');
+        if (rawLocal) {
+          const parsed = JSON.parse(rawLocal);
+          if (Array.isArray(parsed)) localCustom = parsed;
+        }
+      } catch (e) {}
+
+      // 讀取 Google 試算表 API
+      let cloudList = [];
+      let isCloudConnected = false;
+      if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== "") {
+        try {
+          const resp = await fetch(window.APP_CONFIG.API_URL, { method: 'GET' });
+          if (resp.ok) {
+            const result = await resp.json();
+            const list = Array.isArray(result) ? result : (result.data || []);
+            if (Array.isArray(list)) {
+              cloudList = list;
+              isCloudConnected = true;
+            }
+          }
+        } catch (e) {
+          console.warn('連線 Google Apps Script 失敗:', e);
+        }
+      }
+
+      if (statusBadge) {
+        if (isCloudConnected) {
+          statusBadge.className = 'api-status-badge api-online';
+          statusBadge.textContent = '☁️ 雲端試算表已連線';
+        } else {
+          statusBadge.className = 'api-status-badge api-offline';
+          statusBadge.textContent = window.APP_CONFIG.API_URL ? '⚠️ 雲端離線 (使用本機暫存)' : '💾 本機模式 (尚未綁定試算表 API)';
+        }
+      }
+
+      // 合併清單：以 key (name_district_county) 為基準去重，自訂資料優先覆蓋
+      const mergedMap = new Map();
+      
+      // 1. 放入 default
+      baseList.forEach(m => {
+        const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+        mergedMap.set(key, m);
+      });
+
+      // 2. 放入 local custom
+      localCustom.forEach(m => {
+        const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+        mergedMap.set(key, { ...m, source: 'custom' });
+      });
+
+      // 3. 放入 cloud
+      cloudList.forEach(m => {
+        const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+        mergedMap.set(key, { ...m, source: 'custom' });
+      });
+
+      allMembers = Array.from(mergedMap.values());
+
+      // 重新渲染統計與表格
+      updateStats();
+      updateFilterOptions();
+      renderTable();
+
+      if (refreshIcon) refreshIcon.parentElement.classList.remove('spinning');
+      if (showSyncToast) showToast('🔄 資料已重新同步');
+    }
+
+    // 4. 統計與篩選
+    function updateStats() {
+      document.getElementById('stat-total-count').textContent = allMembers.length;
+      
+      const districts = new Set(allMembers.filter(m => m.district).map(m => `${m.county}|${m.district}`));
+      document.getElementById('stat-district-count').textContent = districts.size;
+
+      const proLevels = ['校隊', '業餘甲組', '甲組', '校隊上'];
+      const proCount = allMembers.filter(m => proLevels.some(p => (m.level || '').includes(p))).length;
+      document.getElementById('stat-pro-count').textContent = proCount;
+
+      const singleCount = allMembers.filter(m => m.single === '是').length;
+      document.getElementById('stat-single-count').textContent = singleCount;
+    }
+
+    function updateFilterOptions() {
+      const levelSelect = document.getElementById('filter-level');
+      const curLevel = levelSelect.value;
+      const levels = [...new Set(allMembers.map(m => m.level).filter(Boolean))];
+      
+      levelSelect.innerHTML = '<option value="all">所有程度</option>';
+      levels.forEach(lvl => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = lvl;
+        levelSelect.appendChild(opt);
+      });
+      levelSelect.value = curLevel || 'all';
+    }
+
+    function getFilteredList() {
+      const keyword = document.getElementById('filter-keyword').value.trim().toLowerCase();
+      const county = document.getElementById('filter-county').value;
+      const level = document.getElementById('filter-level').value;
+      const single = document.getElementById('filter-single').value;
+
+      return allMembers.filter(m => {
+        if (county !== 'all' && m.county !== county) return false;
+        if (level !== 'all' && m.level !== level) return false;
+        if (single !== 'all' && m.single !== single) return false;
+        if (keyword) {
+          const matchName = (m.name || '').toLowerCase().includes(keyword);
+          const matchLoc = (m.locationRaw || m.district || m.county || '').toLowerCase().includes(keyword);
+          const matchMsg = (m.message || '').toLowerCase().includes(keyword);
+          if (!matchName && !matchLoc && !matchMsg) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('member-table-body');
+      const list = getFilteredList();
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-row">無符合篩選條件的球友資料</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      list.forEach((m, idx) => {
+        const tr = document.createElement('tr');
+        const initial = (m.name || '球')[0];
+        const displayLoc = m.district ? `${m.county} ${m.district}` : (m.locationRaw || m.county || '待確認');
+        
+        tr.innerHTML = `
+          <td class="col-id">#${m.id || idx + 1}</td>
+          <td class="col-name">
+            <div class="name-badge">
+              <span class="user-avatar">${initial}</span>
+              <span>${escapeHtml(m.name || '')}</span>
+              ${m.source === 'default' ? '<span class="source-badge source-default">內建</span>' : '<span class="source-badge source-custom">新增</span>'}
+            </div>
+          </td>
+          <td><span class="loc-tag">${escapeHtml(displayLoc)}</span></td>
+          <td><span class="level-tag">${escapeHtml(m.level || '未填')}</span></td>
+          <td>${escapeHtml(m.freeTime || '未填')}</td>
+          <td>${escapeHtml(m.role || '未填')}</td>
+          <td>${m.single === '是' ? '<span style="color:#137333; font-weight:700;">是</span>' : escapeHtml(m.single || '未填')}</td>
+          <td class="msg-preview" title="${escapeHtml(m.message || '')}">${escapeHtml(m.message || '-')}</td>
+          <td style="text-align: right; padding-right: 20px;">
+            <div class="row-actions" style="justify-content: flex-end;">
+              <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="openEditModal(${m.id})">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                編輯
+              </button>
+              <button type="button" class="btn btn-danger-outline" style="padding: 4px 8px; font-size: 12px;" onclick="openDeleteModal(${m.id}, '${escapeJsString(m.name)}')">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                刪除
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 5. 新增 / 編輯彈窗操作
+    window.openCreateModal = function() {
+      document.getElementById('modal-title').textContent = '➕ 新增球友資料';
+      document.getElementById('field-id').value = '';
+      document.getElementById('field-name').value = '';
+      document.getElementById('field-role').value = '不分';
+      document.getElementById('field-county').value = '臺北市';
+      updateDistrictDropdown('臺北市');
+      document.getElementById('field-level').value = '系隊中';
+      document.getElementById('field-freetime').value = '平日晚上';
+      document.querySelector('input[name="field-single"][value="是"]').checked = true;
+      document.getElementById('field-message').value = '';
+
+      document.getElementById('edit-modal').classList.add('active');
+    };
+
+    window.openEditModal = function(id) {
+      const member = allMembers.find(m => String(m.id) === String(id));
+      if (!member) return;
+
+      document.getElementById('modal-title').textContent = `✏️ 編輯球友資料 (#${member.id} - ${member.name})`;
+      document.getElementById('field-id').value = member.id;
+      document.getElementById('field-name').value = member.name || '';
+      document.getElementById('field-role').value = member.role || '不分';
+      
+      const county = normalizeCountyName(member.county) || '臺北市';
+      document.getElementById('field-county').value = county;
+      updateDistrictDropdown(county, member.district || '');
+
+      document.getElementById('field-level').value = member.level || '';
+      document.getElementById('field-freetime').value = member.freeTime || '';
+      
+      const singleVal = member.single || '是';
+      const singleRadio = document.querySelector(`input[name="field-single"][value="${singleVal}"]`);
+      if (singleRadio) singleRadio.checked = true;
+
+      document.getElementById('field-message').value = member.message || '';
+
+      document.getElementById('edit-modal').classList.add('active');
+    };
+
+    function closeModal() {
+      document.getElementById('edit-modal').classList.remove('active');
+    }
+    document.getElementById('btn-close-modal').addEventListener('click', closeModal);
+    document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+    document.getElementById('btn-open-create').addEventListener('click', openCreateModal);
+
+    // 儲存（新增/修改）提交事件
+    document.getElementById('member-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const saveBtn = document.getElementById('btn-save-member');
+      saveBtn.disabled = true;
+      saveBtn.textContent = '儲存中...';
+
+      const idVal = document.getElementById('field-id').value;
+      const isEdit = Boolean(idVal);
+      const name = document.getElementById('field-name').value.trim();
+      const county = document.getElementById('field-county').value;
+      const district = document.getElementById('field-district').value;
+      const level = document.getElementById('field-level').value.trim();
+      const freeTime = document.getElementById('field-freetime').value.trim();
+      const role = document.getElementById('field-role').value.trim();
+      const single = (document.querySelector('input[name="field-single"]:checked') || {}).value || '是';
+      const message = document.getElementById('field-message').value.trim();
+
+      const memberData = {
+        id: isEdit ? (Number(idVal) || idVal) : Date.now(),
+        name: name,
+        county: county,
+        district: district,
+        city: district || county,
+        locationRaw: `${county} ${district}`.trim(),
+        level: level,
+        levelTag: level,
+        freeTime: freeTime,
+        role: role,
+        single: single,
+        message: message,
+        action: isEdit ? 'update' : 'create'
+      };
+
+      // 1. 更新本機 localStorage
+      try {
+        let localList = [];
+        const rawLocal = localStorage.getItem('table_tennis_custom_members');
+        if (rawLocal) localList = JSON.parse(rawLocal);
+
+        if (isEdit) {
+          const idx = localList.findIndex(m => String(m.id) === String(idVal));
+          if (idx !== -1) {
+            localList[idx] = { ...localList[idx], ...memberData };
+          } else {
+            // 如果原本是預設名單但被編輯，放入 localList 覆蓋
+            localList.push(memberData);
+          }
+        } else {
+          localList.push(memberData);
+        }
+        localStorage.setItem('table_tennis_custom_members', JSON.stringify(localList));
+      } catch (err) {
+        console.warn('本機儲存失敗', err);
+      }
+
+      // 2. 同步至 Google Sheets API (若有設定)
+      if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== '') {
+        try {
+          await fetch(window.APP_CONFIG.API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(memberData)
+          });
+        } catch (err) {
+          console.warn('發送 Google Sheets 失敗', err);
+        }
+      }
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = '儲存資料';
+      closeModal();
+      showToast(isEdit ? '✅ 球友資料修改成功' : '🎉 新增球友成功');
+      
+      // 重新載入名單
+      loadMembers();
+    });
+
+    // 6. 刪除彈窗操作
+    window.openDeleteModal = function(id, name) {
+      deleteTargetId = id;
+      document.getElementById('delete-target-name').textContent = name;
+      document.getElementById('delete-modal').classList.add('active');
+    };
+
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.remove('active');
+      deleteTargetId = null;
+    }
+    document.getElementById('btn-close-delete').addEventListener('click', closeDeleteModal);
+    document.getElementById('btn-cancel-delete').addEventListener('click', closeDeleteModal);
+
+    document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+      if (!deleteTargetId) return;
+      const targetMember = allMembers.find(m => String(m.id) === String(deleteTargetId));
+      const targetName = targetMember ? targetMember.name : '';
+
+      // 1. 若是預設成員，將 ID 加入 deleted_default_ids
+      if (targetMember && targetMember.source === 'default') {
+        try {
+          let delSet = new Set();
+          const rawDel = localStorage.getItem('table_tennis_deleted_default_ids');
+          if (rawDel) delSet = new Set(JSON.parse(rawDel));
+          delSet.add(targetMember.id);
+          localStorage.setItem('table_tennis_deleted_default_ids', JSON.stringify(Array.from(delSet)));
+        } catch (e) {}
+      }
+
+      // 2. 從 local custom members 移除
+      try {
+        const rawLocal = localStorage.getItem('table_tennis_custom_members');
+        if (rawLocal) {
+          let localList = JSON.parse(rawLocal);
+          localList = localList.filter(m => String(m.id) !== String(deleteTargetId) && m.name !== targetName);
+          localStorage.setItem('table_tennis_custom_members', JSON.stringify(localList));
+        }
+      } catch (e) {}
+
+      // 3. 發送 delete action 到 Google Sheets API
+      if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== '') {
+        try {
+          await fetch(window.APP_CONFIG.API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'delete',
+              id: deleteTargetId,
+              name: targetName
+            })
+          });
+        } catch (e) {
+          console.warn('雲端刪除失敗', e);
+        }
+      }
+
+      closeDeleteModal();
+      showToast('🗑️ 已刪除球友資料');
+      loadMembers();
+    });
+
+    // 7. 匯出 CSV 備份功能 (UTF-8 BOM Excel 相容)
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+      if (!allMembers.length) {
+        showToast('⚠️ 目前尚無資料可匯出');
+        return;
+      }
+
+      const headers = ['ID', '稱呼', '縣市', '鄉鎮市區', '完整居住地', '桌球程度', '程度標籤', '較有空時間', '角色', '是否單身', '想說的話'];
+      const rows = allMembers.map((m, idx) => [
+        m.id || idx + 1,
+        m.name || '',
+        m.county || '',
+        m.district || '',
+        m.locationRaw || '',
+        m.level || '',
+        m.levelTag || m.level || '',
+        m.freeTime || '',
+        m.role || '',
+        m.single || '',
+        `"${(m.message || '').replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = '\uFEFF' + [
+        headers.join(','),
+        ...rows.map(r => r.join(','))
+      ].join('\r\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const today = new Date().toISOString().slice(0, 10);
+      a.download = `桌球同好地圖成員名冊_${today}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('📥 CSV 備份已下載完成');
+    });
+
+    // 8. 篩選器監聽
+    document.getElementById('filter-keyword').addEventListener('input', renderTable);
+    document.getElementById('filter-county').addEventListener('change', renderTable);
+    document.getElementById('filter-level').addEventListener('change', renderTable);
+    document.getElementById('filter-single').addEventListener('change', renderTable);
+    document.getElementById('btn-clear-filters').addEventListener('click', () => {
+      document.getElementById('filter-keyword').value = '';
+      document.getElementById('filter-county').value = 'all';
+      document.getElementById('filter-level').value = 'all';
+      document.getElementById('filter-single').value = 'all';
+      renderTable();
+    });
+
+    // 重新整理按鈕
+    document.getElementById('btn-refresh').addEventListener('click', () => {
+      loadMembers(true);
+    });
+
+    // Toast 提示
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // 工具函式
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+    function escapeJsString(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // 初始化入口
+    function initAdmin() {
+      initCountySelects();
+      loadMembers(false);
+    }
+
+    // 檢查登入狀態
+    checkAuth();
+  </script>
+</body>
+</html>
