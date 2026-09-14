@@ -282,7 +282,62 @@
       .detail.wide { grid-column: auto; }
       .modal-inner { padding: 18px; }
     }
+    /* 自動化加入與同步按鈕樣式 */
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+      line-height: 1.2;
+    }
+    .action-btn.join-btn {
+      background: linear-gradient(135deg, #1f7a55, #145338);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(31, 122, 85, .32);
+    }
+    .action-btn.join-btn:hover {
+      background: linear-gradient(135deg, #186345, #0d3b28);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(31, 122, 85, .42);
+    }
+    .action-btn.refresh-btn {
+      background: rgba(255, 255, 255, .85);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .action-btn.refresh-btn:hover {
+      background: #fff;
+      border-color: var(--accent-dark);
+      color: var(--accent-dark);
+    }
+    .action-btn.spinning svg {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @media (max-width: 760px) {
+      .top-stats .action-btn.join-btn {
+        margin-left: 0 !important;
+        flex: 1 1 100%;
+        justify-content: center;
+        padding: 11px 18px;
+      }
+      .top-stats .action-btn.refresh-btn {
+        flex: 1 1 100%;
+        justify-content: center;
+      }
+    }
   </style>
+  <script src="config.js"></script>
 </head>
 <body>
   <div class="rainbow-line" aria-hidden="true"></div>
@@ -293,6 +348,14 @@
     <div class="top-stats" aria-live="polite">
       <div class="stat"><strong id="result-count">0</strong><span>位符合條件</span></div>
       <div class="stat"><strong id="city-count">0</strong><span>個地區有球友</span></div>
+      <a href="join.html" class="action-btn join-btn" style="margin-left: auto;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        填寫資料加入地圖
+      </a>
+      <button id="btn-refresh-data" class="action-btn refresh-btn" type="button" title="同步最新球友資料">
+        <svg id="refresh-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        <span id="refresh-text">重新同步</span>
+      </button>
     </div>
   </header>
 
@@ -748,7 +811,8 @@
 
   <script>
     // 新成員資料請加入這個陣列；city 必須使用執行框架中的標準縣市名稱。
-    const members = [
+    const defaultMembers = [
+
       {"id":1,"name":"阿維","city":"龜山區","county":"桃園市","district":"龜山區","locationRaw":"龜山區","level":"校隊","levelTag":"校隊","freeTime":"晚上","role":"不分","single":"是","message":"至少開一次團才有後續"},
       {"id":2,"name":"老貓","city":"區域待確認","county":"苗栗縣","district":"","locationRaw":"苗栗","level":"從未加過隊或上過課，無程度，只是想運動而已","levelTag":"未分類","freeTime":"週六日，週六比較好","role":"不分","single":"是","message":"其實我是想要輕鬆打，但有程度的人或許想法不一樣。"},
       {"id":3,"name":"Casper","city":"新豐鄉","county":"新竹縣","district":"新豐鄉","locationRaw":"新竹縣新豐鄉（明新科大附近","level":"不專業系隊","levelTag":"未分類","freeTime":"週末","role":"偏零","single":"是","message":""},
@@ -757,6 +821,8 @@
       {"id":6,"name":"陶德","city":"內湖區","county":"臺北市","district":"內湖區","locationRaw":"內湖","level":"可連續推擋","levelTag":"未分類","freeTime":"平日晚上、星期六","role":"side","single":"否","message":"很開心認識大家，好久沒打桌球了，希望有機會一起打桌球"},
       {"id":7,"name":"奶茶","city":"三峽區","county":"新北市","district":"三峽區","locationRaw":"三峽","level":"系隊中","levelTag":"系隊中","freeTime":"六日下午","role":"000","single":"是","message":"歡樂打桌球，打桌球真歡樂"}
     ];
+
+    let members = [...defaultMembers];
 
     const districtPositions = {"臺東縣|成功鎮":[586.7,518.1],"屏東縣|佳冬鄉":[423.0,659.4],"雲林縣|麥寮鄉":[360.4,383.3],"臺東縣|綠島鄉":[614.3,612.7],"臺東縣|蘭嶼鄉":[626.4,736.8],"彰化縣|田中鎮":[431.9,369.9],"彰化縣|社頭鄉":[434.2,360.1],"屏東縣|竹田鄉":[419.2,626.8],"屏東縣|萬丹鄉":[408.9,627.2],"苗栗縣|三灣鄉":[505.3,212.1],"新竹縣|峨眉鄉":[517.1,203.5],"苗栗縣|南庄鄉":[518.4,226.2],"嘉義縣|太保市":[381.9,447.8],"嘉義縣|中埔鄉":[420.9,461.8],"嘉義縣|番路鄉":[435.3,457.0],"嘉義縣|水上鄉":[396.2,456.7],"彰化縣|員林市":[432.4,349.8],"高雄市|小港區":[383.6,635.3],"宜蘭縣|蘇澳鎮":[684.4,228.2],"宜蘭縣|五結鄉":[678.3,201.3],"宜蘭縣|宜蘭市":[668.3,188.9],"宜蘭縣|壯圍鄉":[677.5,188.5],"連江縣|南竿鄉":[38.4,131.1],"連江縣|莒光鄉":[43.4,154.9],"金門縣|金寧鄉":[73.6,306.5],"金門縣|烏坵鄉":[200.9,139.9],"宜蘭縣|羅東鎮":[671.0,203.4],"宜蘭縣|員山鄉":[648.9,190.6],"宜蘭縣|冬山鄉":[669.0,210.8],"宜蘭縣|三星鄉":[649.6,205.6],"宜蘭縣|大同鄉":[619.3,230.6],"新竹縣|竹東鎮":[530.1,192.8],"新竹縣|新埔鎮":[533.9,170.4],"新竹縣|關西鎮":[552.7,181.8],"新竹縣|湖口鄉":[525.4,161.5],"新竹縣|芎林鄉":[536.1,185.8],"新竹縣|橫山鄉":[544.7,197.5],"新竹縣|北埔鄉":[527.9,204.7],"新竹縣|尖石鄉":[572.0,220.4],"新竹縣|五峰鄉":[543.1,223.8],"臺中市|龍井區":[418.5,300.1],"臺中市|大雅區":[442.1,295.0],"臺中市|沙鹿區":[430.5,293.5],"臺中市|梧棲區":[418.3,290.3],"澎湖縣|湖西鄉":[240.2,426.6],"臺東縣|金峰鄉":[485.9,628.5],"臺東縣|太麻里鄉":[510.8,626.5],"苗栗縣|苗栗市":[476.6,226.7],"苗栗縣|卓蘭鎮":[485.7,275.1],"苗栗縣|大湖鄉":[487.1,261.2],"苗栗縣|公館鄉":[484.6,239.2],"苗栗縣|銅鑼鄉":[474.2,248.6],"苗栗縣|頭屋鄉":[491.1,224.7],"苗栗縣|三義鄉":[468.3,263.8],"苗栗縣|西湖鄉":[466.5,231.3],"苗栗縣|造橋鄉":[488.4,214.3],"苗栗縣|獅潭鄉":[498.8,235.6],"苗栗縣|泰安鄉":[528.7,256.0],"彰化縣|彰化市":[427.6,325.7],"彰化縣|和美鎮":[415.8,317.9],"彰化縣|線西鄉":[401.8,313.1],"彰化縣|伸港鄉":[408.3,306.4],"彰化縣|秀水鄉":[414.4,334.4],"彰化縣|花壇鄉":[425.6,334.9],"彰化縣|芬園鄉":[439.8,339.7],"彰化縣|溪湖鎮":[410.1,350.8],"嘉義縣|東石鄉":[347.5,448.7],"彰化縣|大村鄉":[425.4,342.6],"彰化縣|埔鹽鄉":[405.3,342.6],"彰化縣|埔心鄉":[420.5,350.6],"彰化縣|永靖鄉":[421.9,356.9],"彰化縣|二水鄉":[439.6,379.7],"彰化縣|二林鎮":[394.1,358.0],"彰化縣|埤頭鄉":[406.9,364.9],"彰化縣|芳苑鄉":[381.3,349.5],"彰化縣|大城鄉":[372.0,369.5],"彰化縣|竹塘鄉":[396.0,371.3],"彰化縣|溪州鄉":[418.1,376.0],"南投縣|南投市":[449.8,356.9],"南投縣|埔里鎮":[507.3,345.3],"南投縣|草屯鎮":[460.5,344.4],"南投縣|竹山鎮":[456.1,402.2],"南投縣|集集鎮":[471.3,374.0],"南投縣|名間鄉":[449.5,371.2],"南投縣|鹿谷鄉":[470.6,394.1],"南投縣|中寮鄉":[471.5,360.1],"南投縣|魚池鄉":[499.9,366.1],"南投縣|國姓鄉":[488.0,334.7],"南投縣|水里鄉":[487.0,382.3],"南投縣|信義鄉":[519.2,410.8],"南投縣|仁愛鄉":[544.1,335.2],"雲林縣|斗六市":[425.7,400.5],"雲林縣|斗南鎮":[410.0,407.7],"雲林縣|虎尾鎮":[399.2,398.4],"雲林縣|西螺鎮":[405.0,385.7],"雲林縣|土庫鎮":[386.1,403.6],"雲林縣|北港鎮":[371.8,423.7],"雲林縣|古坑鄉":[436.2,416.9],"雲林縣|大埤鄉":[398.4,412.9],"雲林縣|莿桐鄉":[419.4,387.7],"雲林縣|林內鄉":[436.9,390.5],"雲林縣|二崙鄉":[392.5,383.1],"雲林縣|崙背鄉":[379.9,385.9],"雲林縣|東勢鄉":[364.2,402.6],"雲林縣|褒忠鄉":[375.3,398.5],"雲林縣|元長鄉":[378.6,413.5],"雲林縣|水林鄉":[359.9,429.8],"嘉義縣|朴子市":[363.6,453.3],"嘉義縣|大林鎮":[409.6,422.3],"嘉義縣|民雄鄉":[402.3,433.7],"嘉義縣|溪口鄉":[393.5,423.4],"嘉義縣|新港鄉":[382.8,433.0],"嘉義縣|六腳鄉":[367.1,440.3],"嘉義縣|義竹鄉":[357.5,473.6],"嘉義縣|鹿草鄉":[373.9,461.0],"嘉義縣|竹崎鄉":[433.1,441.6],"嘉義縣|梅山鄉":[441.7,431.1],"嘉義縣|大埔鄉":[431.7,485.2],"嘉義縣|阿里山鄉":[466.1,454.4],"屏東縣|屏東市":[409.5,611.7],"屏東縣|潮州鎮":[425.0,637.7],"屏東縣|長治鄉":[424.9,605.6],"屏東縣|麟洛鄉":[419.6,614.9],"屏東縣|九如鄉":[410.3,598.1],"屏東縣|里港鄉":[414.8,584.6],"屏東縣|鹽埔鄉":[427.6,595.9],"屏東縣|高樹鄉":[434.1,582.2],"屏東縣|萬巒鄉":[434.1,628.3],"屏東縣|內埔鄉":[431.5,614.4],"屏東縣|新埤鄉":[430.7,647.7],"屏東縣|崁頂鄉":[413.6,641.9],"屏東縣|南州鄉":[417.2,649.1],"屏東縣|琉球鄉":[387.4,677.4],"屏東縣|三地門鄉":[451.3,584.7],"屏東縣|霧臺鄉":[474.5,592.4],"屏東縣|瑪家鄉":[450.0,610.4],"屏東縣|泰武鄉":[452.4,624.0],"屏東縣|來義鄉":[451.2,644.7],"屏東縣|春日鄉":[453.6,664.5],"屏東縣|獅子鄉":[461.3,693.5],"臺東縣|鹿野鄉":[546.8,553.5],"臺東縣|池上鄉":[559.1,524.9],"臺東縣|延平鄉":[511.6,563.3],"花蓮縣|光復鄉":[603.1,412.7],"花蓮縣|瑞穗鄉":[597.5,439.2],"花蓮縣|富里鄉":[575.3,503.8],"澎湖縣|馬公市":[229.1,432.4],"澎湖縣|白沙鄉":[228.7,411.4],"澎湖縣|西嶼鄉":[212.7,420.9],"澎湖縣|望安鄉":[211.0,468.3],"澎湖縣|七美鄉":[196.5,501.5],"基隆市|暖暖區":[665.9,121.9],"臺北市|大安區":[625.1,132.8],"臺北市|文山區":[631.2,140.6],"高雄市|鹽埕區":[369.9,619.9],"高雄市|新興區":[374.4,618.7],"高雄市|前金區":[371.9,619.4],"高雄市|前鎮區":[375.5,626.3],"宜蘭縣|頭城鎮":[685.7,158.1],"宜蘭縣|南澳鄉":[649.9,251.6],"新竹縣|竹北市":[513.6,171.0],"新竹縣|新豐鄉":[513.8,157.1],"苗栗縣|苑裡鎮":[451.6,257.6],"苗栗縣|通霄鎮":[456.8,242.5],"苗栗縣|竹南鎮":[489.8,199.3],"苗栗縣|後龍鎮":[470.0,215.9],"彰化縣|鹿港鎮":[398.6,324.0],"彰化縣|福興鄉":[397.9,334.3],"雲林縣|臺西鄉":[352.7,398.5],"雲林縣|四湖鄉":[351.5,412.8],"雲林縣|口湖鄉":[346.9,427.5],"嘉義縣|布袋鎮":[347.9,467.7],"屏東縣|東港鎮":[408.3,652.9],"屏東縣|枋寮鄉":[433.1,664.8],"屏東縣|新園鄉":[403.4,641.7],"屏東縣|林邊鄉":[415.8,657.2],"屏東縣|車城鄉":[462.7,730.3],"屏東縣|滿州鄉":[483.3,736.4],"屏東縣|枋山鄉":[445.5,692.2],"屏東縣|牡丹鄉":[477.9,714.9],"臺東縣|臺東市":[537.2,594.1],"臺東縣|卑南鄉":[515.2,591.4],"臺東縣|東河鄉":[565.9,547.8],"花蓮縣|吉安鄉":[629.4,350.0],"花蓮縣|壽豐鄉":[623.2,372.4],"花蓮縣|秀林鄉":[612.4,315.9],"高雄市|楠梓區":[373.0,600.3],"高雄市|鳳山區":[384.2,622.0],"高雄市|大寮區":[395.5,626.2],"高雄市|大樹區":[398.4,602.3],"高雄市|大社區":[387.3,596.4],"高雄市|仁武區":[385.2,604.3],"高雄市|鳥松區":[387.7,612.1],"高雄市|岡山區":[372.5,583.2],"高雄市|橋頭區":[373.1,593.9],"高雄市|燕巢區":[387.3,586.7],"高雄市|田寮區":[392.4,571.3],"高雄市|阿蓮區":[377.2,570.0],"高雄市|路竹區":[366.1,572.6],"高雄市|湖內區":[358.0,565.3],"高雄市|旗山區":[408.5,571.1],"高雄市|美濃區":[426.4,564.0],"高雄市|六龜區":[445.5,542.0],"高雄市|甲仙區":[438.6,520.0],"高雄市|杉林區":[426.1,544.3],"高雄市|內門區":[407.8,552.5],"高雄市|茂林區":[464.7,559.9],"高雄市|桃源區":[485.0,498.1],"高雄市|那瑪夏區":[458.3,490.3],"新北市|永和區":[619.7,136.7],"新北市|新店區":[622.6,152.4],"新北市|土城區":[605.2,145.5],"新北市|蘆洲區":[610.4,120.1],"新北市|五股區":[602.7,118.8],"新北市|坪林區":[661.7,156.3],"新北市|平溪區":[668.5,133.0],"新北市|烏來區":[624.6,181.2],"臺中市|豐原區":[461.7,290.3],"臺中市|東勢區":[482.4,290.4],"臺中市|后里區":[457.0,278.2],"臺中市|神岡區":[448.7,287.1],"臺中市|新社區":[480.7,304.9],"臺中市|石岡區":[472.4,287.3],"臺中市|外埔區":[447.0,273.0],"臺中市|大肚區":[424.6,311.7],"臺中市|和平區":[543.4,285.1],"臺南市|新營區":[372.1,482.6],"臺南市|鹽水區":[362.5,483.3],"臺南市|白河區":[405.0,472.5],"臺南市|後壁區":[382.8,470.3],"臺南市|麻豆區":[361.1,506.7],"臺南市|下營區":[365.9,496.9],"臺南市|六甲區":[389.2,497.6],"臺南市|官田區":[382.7,505.0],"臺南市|大內區":[393.0,514.3],"臺南市|佳里區":[348.4,509.8],"臺南市|學甲區":[349.5,492.6],"臺南市|西港區":[352.8,518.3],"臺南市|新化區":[380.2,536.9],"臺南市|新市區":[371.5,526.8],"臺南市|安定區":[358.7,523.5],"臺南市|玉井區":[405.6,520.4],"臺南市|楠西區":[417.0,507.4],"臺南市|南化區":[422.5,520.4],"臺南市|左鎮區":[395.7,538.4],"臺南市|仁德區":[361.2,555.6],"臺南市|歸仁區":[371.6,554.5],"臺南市|關廟區":[379.9,552.7],"臺南市|龍崎區":[390.6,552.9],"臺南市|永康區":[363.7,538.2],"臺南市|北區":[353.9,541.7],"高雄市|林園區":[392.9,644.0],"高雄市|茄萣區":[352.3,567.7],"高雄市|永安區":[357.9,579.8],"高雄市|彌陀區":[360.7,588.4],"高雄市|梓官區":[364.7,594.8],"新北市|淡水區":[608.8,99.9],"新北市|瑞芳區":[681.8,118.3],"新北市|林口區":[586.4,117.9],"新北市|三芝區":[619.2,91.3],"新北市|八里區":[598.5,110.3],"臺中市|大甲區":[441.1,264.3],"臺中市|大安區":[431.8,267.1],"臺南市|北門區":[337.6,487.2],"臺南市|安南區":[343.1,533.9],"桃園市|蘆竹區":[572.3,125.9],"桃園市|龜山區":[587.2,133.4],"桃園市|復興區":[591.0,193.1],"嘉義市|東區":[407.6,446.1],"嘉義市|西區":[398.3,446.5],"臺東縣|達仁鄉":[481.5,668.5],"臺東縣|大武鄉":[494.3,668.8],"臺東縣|關山鎮":[550.6,536.1],"臺東縣|海端鄉":[518.4,520.4],"新竹市|北區":[504.0,173.7],"新竹市|香山區":[499.2,184.6],"宜蘭縣|礁溪鄉":[663.8,176.5],"花蓮縣|玉里鎮":[588.0,468.4],"花蓮縣|卓溪鄉":[551.4,464.6],"苗栗縣|頭份市":[498.4,203.9],"臺中市|清水區":[429.1,281.5],"臺南市|南區":[350.6,552.7],"臺南市|東區":[358.4,547.4],"臺南市|安平區":[345.5,545.8],"臺南市|中西區":[351.5,544.7],"桃園市|大溪區":[575.0,165.0],"桃園市|八德區":[573.9,148.5],"桃園市|桃園區":[575.6,138.2],"桃園市|大園區":[557.7,125.1],"桃園市|楊梅區":[541.0,154.9],"基隆市|七堵區":[653.5,116.1],"基隆市|仁愛區":[665.6,114.0],"基隆市|信義區":[671.5,112.8],"基隆市|中正區":[672.2,109.2],"基隆市|中山區":[663.4,107.8],"基隆市|安樂區":[658.4,109.6],"新北市|三峽區":[599.2,162.1],"新北市|鶯歌區":[585.2,147.0],"新北市|中和區":[615.0,140.1],"新北市|樹林區":[596.2,142.4],"新北市|深坑區":[640.5,138.8],"新北市|板橋區":[607.7,135.9],"新北市|石碇區":[646.1,149.0],"新北市|新莊區":[603.5,131.0],"新北市|泰山區":[599.2,127.0],"新北市|三重區":[613.6,125.6],"新北市|雙溪區":[683.7,138.9],"新北市|貢寮區":[701.2,133.1],"新北市|汐止區":[647.6,123.4],"新北市|萬里區":[645.5,102.6],"新北市|金山區":[637.6,94.2],"新北市|石門區":[630.3,84.5],"高雄市|苓雅區":[377.0,620.1],"高雄市|三民區":[376.6,614.7],"桃園市|新屋區":[528.3,143.8],"桃園市|觀音區":[538.1,132.7],"連江縣|北竿鄉":[45.0,123.1],"連江縣|東引鄉":[106.4,105.0],"金門縣|烈嶼鄉":[59.9,310.3],"高雄市|旗津區":[370.7,628.2],"臺東縣|長濱鄉":[601.3,475.9],"花蓮縣|豐濱鄉":[615.2,425.0],"臺中市|霧峰區":[458.2,332.2],"臺中市|大里區":[452.6,321.6],"臺中市|南區":[446.9,316.5],"臺中市|烏日區":[439.8,324.0],"臺中市|中區":[450.1,312.3],"臺中市|西區":[446.9,311.8],"臺中市|南屯區":[437.5,312.4],"臺中市|北區":[450.1,308.8],"臺中市|西屯區":[439.2,303.9],"臺中市|北屯區":[461.4,303.7],"臺中市|潭子區":[456.3,298.0],"臺北市|信義區":[630.8,132.1],"臺北市|萬華區":[615.8,132.3],"臺北市|中正區":[620.2,131.7],"臺北市|松山區":[627.9,126.2],"臺北市|大同區":[618.9,125.3],"臺北市|中山區":[624.0,124.1],"臺北市|士林區":[626.5,112.8],"臺北市|北投區":[619.9,108.2],"花蓮縣|花蓮市":[638.3,341.7],"花蓮縣|新城鄉":[639.4,329.6],"臺南市|善化區":[372.7,515.3],"臺南市|山上區":[387.3,524.0],"彰化縣|北斗鎮":[420.2,367.8],"彰化縣|田尾鄉":[418.1,361.2],"金門縣|金城鎮":[71.3,313.4],"金門縣|金沙鎮":[88.1,301.6],"金門縣|金湖鎮":[87.5,308.6],"臺南市|柳營區":[384.1,489.2],"臺南市|東山區":[402.2,487.3],"臺南市|七股區":[332.3,518.7],"臺南市|將軍區":[337.9,501.4],"高雄市|鼓山區":[367.7,615.1],"高雄市|左營區":[371.4,607.6],"桃園市|中壢區":[558.4,142.3],"新竹縣|寶山鄉":[514.7,191.6],"新竹市|東區":[513.4,180.8],"屏東縣|恆春鎮":[467.0,749.5],"臺中市|東區":[453.4,313.2],"臺中市|太平區":[468.9,317.7],"花蓮縣|鳳林鎮":[609.9,393.1],"花蓮縣|萬榮鄉":[579.5,396.5],"桃園市|龍潭區":[557.8,168.6],"桃園市|平鎮區":[558.3,154.3],"臺北市|南港區":[638.5,130.9],"臺北市|內湖區":[635.0,121.3]};
 
@@ -802,24 +868,44 @@
       });
     }
 
-    function setupFilters() {
+    function refreshFilterChoices() {
       const citySelect = document.getElementById("city-filter");
+      const currentVal = state.city;
+      while (citySelect.options.length > 1) {
+        citySelect.remove(1);
+      }
       uniqueValues("city").forEach(city => {
         const option = document.createElement("option");
         option.value = option.textContent = city;
         citySelect.appendChild(option);
       });
-      citySelect.addEventListener("change", event => { state.city = event.target.value; render(); });
+      citySelect.value = currentVal || "all";
 
       createChoice("level-filters", uniqueValues("level"), "checkbox", "level", event => {
         event.target.checked ? state.levels.add(event.target.value) : state.levels.delete(event.target.value); render();
       });
+      document.querySelectorAll('#level-filters input').forEach(input => {
+        if (state.levels.has(input.value)) input.checked = true;
+      });
+
       createChoice("role-filters", uniqueValues("role"), "checkbox", "role", event => {
         event.target.checked ? state.roles.add(event.target.value) : state.roles.delete(event.target.value); render();
       });
+      document.querySelectorAll('#role-filters input').forEach(input => {
+        if (state.roles.has(input.value)) input.checked = true;
+      });
+
       createChoice("single-filters", uniqueValues("single"), "radio", "single", event => {
         if (event.target.checked) { state.single = event.target.value; render(); }
       });
+      document.querySelectorAll('#single-filters input').forEach(input => {
+        if (input.value === state.single) input.checked = true;
+      });
+    }
+
+    function setupFilters() {
+      const citySelect = document.getElementById("city-filter");
+      citySelect.addEventListener("change", event => { state.city = event.target.value; render(); });
 
       document.getElementById("clear-filters").addEventListener("click", () => {
         state.city = "all";
@@ -828,9 +914,98 @@
         state.single = "all";
         citySelect.value = "all";
         document.querySelectorAll(".filter-card input").forEach(input => { input.checked = false; });
-
         render();
       });
+
+      refreshFilterChoices();
+    }
+
+    function normalizeCountyName(county) {
+      if (!county) return "";
+      return county.replace(/^台北市/, "臺北市")
+                   .replace(/^台中市/, "臺中市")
+                   .replace(/^台南市/, "臺南市")
+                   .replace(/^台東縣/, "臺東縣");
+    }
+
+    function mergeMemberLists(base, incoming) {
+      const existingKeySet = new Set(base.map(m => ((m.name||'').trim() + '_' + (m.district||'').trim() + '_' + normalizeCountyName(m.county))));
+      const merged = [...base];
+      incoming.forEach(item => {
+        if (!item || !item.name) return;
+        const normCounty = normalizeCountyName(item.county);
+        const normDistrict = (item.district || '').trim();
+        const normName = (item.name || '').trim();
+        const key = normName + '_' + normDistrict + '_' + normCounty;
+        if (!existingKeySet.has(key)) {
+          existingKeySet.add(key);
+          merged.push({
+            id: item.id || (Date.now() + Math.floor(Math.random() * 1000)),
+            name: normName,
+            city: item.city || normDistrict || normCounty || "待確認",
+            county: normCounty,
+            district: normDistrict,
+            locationRaw: item.locationRaw || (normDistrict ? (normCounty + " " + normDistrict) : normCounty),
+            level: item.level || "待確認",
+            levelTag: item.levelTag || item.level || "待確認",
+            freeTime: item.freeTime || "待確認",
+            role: item.role || "不分",
+            single: item.single || "是",
+            message: item.message || ""
+          });
+        }
+      });
+      return merged;
+    }
+
+    async function loadDynamicMembers(showFeedback = false) {
+      const refreshBtn = document.getElementById("btn-refresh-data");
+      const refreshText = document.getElementById("refresh-text");
+      if (refreshBtn) refreshBtn.classList.add("spinning");
+      if (refreshText && showFeedback) refreshText.textContent = "同步中...";
+
+      let currentList = [...defaultMembers];
+
+      // 1. 本機暫存 (localStorage)
+      try {
+        const localData = localStorage.getItem("table_tennis_custom_members");
+        if (localData) {
+          const parsed = JSON.parse(localData);
+          if (Array.isArray(parsed)) {
+            currentList = mergeMemberLists(currentList, parsed);
+          }
+        }
+      } catch (e) {
+        console.warn("讀取本機球友快取失敗", e);
+      }
+
+      // 2. 雲端 Google Sheets API
+      if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== "") {
+        try {
+          const resp = await fetch(window.APP_CONFIG.API_URL, { method: "GET" });
+          if (resp.ok) {
+            const result = await resp.json();
+            const remoteList = Array.isArray(result) ? result : (result.data || []);
+            if (Array.isArray(remoteList) && remoteList.length > 0) {
+              currentList = mergeMemberLists(currentList, remoteList);
+            }
+          }
+        } catch (e) {
+          console.warn("無法連線至 Google Sheets API，使用快取或預設資料", e);
+        }
+      }
+
+      members = currentList;
+      refreshFilterChoices();
+      render();
+
+      if (refreshBtn) refreshBtn.classList.remove("spinning");
+      if (refreshText) {
+        refreshText.textContent = showFeedback ? "同步完成" : "重新同步";
+        if (showFeedback) {
+          setTimeout(() => { refreshText.textContent = "重新同步"; }, 2000);
+        }
+      }
     }
 
     function getFilteredMembers() {
@@ -1104,6 +1279,13 @@
     setupFilters();
     setupMapNavigation();
     render();
+
+    // 啟動動態球友同步
+    loadDynamicMembers(false);
+    const btnRefresh = document.getElementById("btn-refresh-data");
+    if (btnRefresh) {
+      btnRefresh.addEventListener("click", () => loadDynamicMembers(true));
+    }
   </script>
 </body>
 </html>

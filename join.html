@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>加入桌球同好地圖 🏓</title>
+  <style>
+    :root {
+      --bg: #faf8f5;
+      --card: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --accent-dark: #1d4ed8;
+      --success: #10b981;
+      --line-green: #06c755;
+      --radius: 20px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px 40px;
+    }
+
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--line);
+      transition: all .2s ease;
+    }
+    .back-link:hover { color: var(--ink); border-color: var(--muted); }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .card-rainbow {
+      height: 8px;
+      background: linear-gradient(90deg, #e94155 0%, #f28b28 16.66%, #f2d34f 33.33%, #3aac6d 50%, #3f82d6 66.66%, #8c57bd 83.33%);
+    }
+
+    .card-content {
+      padding: 28px 24px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .page-desc {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+
+    .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 15px;
+      background: #fafafa;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .2s, background-color .2s;
+    }
+
+    input[type="text"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .chips-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .chip-btn {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      border: 1px solid transparent;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .chip-btn:hover {
+      background: #dbeafe;
+    }
+
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .radio-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f3f4f6;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      transition: all .2s;
+    }
+    .radio-label:has(input:checked) {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+    .radio-label input { accent-color: var(--accent); }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.36);
+    }
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 成功畫面樣式 */
+    .success-box {
+      text-align: center;
+      padding: 10px 4px 20px;
+    }
+
+    .success-icon {
+      font-size: 52px;
+      margin-bottom: 12px;
+    }
+
+    .success-title {
+      font-size: 24px;
+      font-weight: 950;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .success-subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    /* LINE 提醒重點卡片 */
+    .line-reminder-card {
+      background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 2px solid #86efac;
+      border-radius: 18px;
+      padding: 22px 18px;
+      margin-bottom: 24px;
+      text-align: left;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.12);
+    }
+
+    .line-reminder-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--line-green);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+
+    .line-reminder-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: #065f46;
+      margin-bottom: 6px;
+    }
+
+    .line-reminder-desc {
+      font-size: 13px;
+      color: #166534;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .line-join-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: var(--line-green);
+      color: #fff;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 950;
+      padding: 14px 18px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(6, 199, 85, 0.35);
+      transition: transform .15s, box-shadow .15s;
+    }
+    .line-join-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(6, 199, 85, 0.45);
+    }
+
+    .go-map-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: #fff;
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 12px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      transition: all .2s;
+    }
+    .go-map-btn:hover {
+      background: #f9fafb;
+      border-color: var(--muted);
+    }
+
+    .status-msg {
+      display: none;
+      margin-top: 14px;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+    .status-msg.error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+  </style>
+  <script src="config.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="nav-bar">
+      <a href="index.html" class="back-link">← 返回桌球同好地圖</a>
+    </div>
+
+    <!-- 表單卡片 -->
+    <div class="card" id="form-card">
+      <div class="card-rainbow"></div>
+      <div class="card-content">
+        <h1 class="page-title">加入桌球同好地圖 🏓</h1>
+        <p class="page-desc">請填寫您的桌球資訊，送出後系統將自動將您加入地圖並插旗！</p>
+
+        <form id="join-form">
+          <!-- 稱呼 -->
+          <div class="form-group">
+            <label for="name">您的稱呼 <span class="required">*</span></label>
+            <input type="text" id="name" name="name" required placeholder="例如：奶茶、阿維、Casper">
+          </div>
+
+          <!-- 居住地 (縣市 + 鄉鎮市區) -->
+          <div class="form-group">
+            <label>居住地區 <span class="required">*</span></label>
+            <div class="row-2">
+              <div>
+                <select id="county" name="county" required>
+                  <option value="">選擇縣市...</option>
+                </select>
+              </div>
+              <div>
+                <select id="district" name="district" required disabled>
+                  <option value="">請先選縣市...</option>
+                </select>
+              </div>
+            </div>
+            <p class="help-text">依照台灣行政區選擇，確保地圖能為您精準插旗。</p>
+          </div>
+
+          <!-- 詳細地點備註 -->
+          <div class="form-group">
+            <label for="location-detail">詳細生活圈 / 地點備註</label>
+            <input type="text" id="location-detail" name="locationDetail" placeholder="例如：明新科大附近、三峽老街周邊">
+            <p class="help-text">選填，若留空則預設顯示所選鄉鎮市區名稱。</p>
+          </div>
+
+          <!-- 桌球程度 -->
+          <div class="form-group">
+            <label for="level">桌球程度 <span class="required">*</span></label>
+            <div class="chips-group">
+              <button type="button" class="chip-btn" data-input="level" data-val="系隊中">系隊中</button>
+              <button type="button" class="chip-btn" data-input="level" data-val="系隊上">系隊上</button>
+              <button type="button" class="chip-btn" data-input="level" data-val="系隊下">系隊下</button>
+              <button type="button" class="chip-btn" data-input="level" data-val="校隊">校隊</button>
+              <button type="button" class="chip-btn" data-input="level" data-val="歡樂組XD">歡樂組XD</button>
+              <button type="button" class="chip-btn" data-input="level" data-val="可連續推擋">可連續推擋</button>
+            </div>
+            <input type="text" id="level" name="level" required placeholder="點選上方標籤或自填程度">
+          </div>
+
+          <!-- 較有空時間 -->
+          <div class="form-group">
+            <label for="free-time">較有空時間 <span class="required">*</span></label>
+            <div class="chips-group">
+              <button type="button" class="chip-btn" data-input="free-time" data-val="平日晚上">平日晚上</button>
+              <button type="button" class="chip-btn" data-input="free-time" data-val="六日下午">六日下午</button>
+              <button type="button" class="chip-btn" data-input="free-time" data-val="週六日">週六日</button>
+              <button type="button" class="chip-btn" data-input="free-time" data-val="週末">週末</button>
+              <button type="button" class="chip-btn" data-input="free-time" data-val="禮拜一晚上">禮拜一晚上</button>
+            </div>
+            <input type="text" id="free-time" name="freeTime" required placeholder="點選上方標籤或自填時間">
+          </div>
+
+          <!-- 角色 (選填) -->
+          <div class="form-group">
+            <label>角色（選填）</label>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="role" value="1"> 1</label>
+              <label class="radio-label"><input type="radio" name="role" value="0"> 0</label>
+              <label class="radio-label"><input type="radio" name="role" value="不分"> 不分</label>
+              <label class="radio-label"><input type="radio" name="role" value="side"> side</label>
+              <label class="radio-label"><input type="radio" name="role" value="未填" checked> 保密 / 不填</label>
+            </div>
+          </div>
+
+          <!-- 是否單身 (選填) -->
+          <div class="form-group">
+            <label>是否單身（選填）</label>
+            <div class="radio-group">
+              <label class="radio-label"><input type="radio" name="single" value="是"> 是</label>
+              <label class="radio-label"><input type="radio" name="single" value="否"> 否</label>
+              <label class="radio-label"><input type="radio" name="single" value="未填" checked> 保密 / 不填</label>
+            </div>
+          </div>
+
+          <!-- 想說的話 (選填) -->
+          <div class="form-group">
+            <label for="message">想說的話（選填）</label>
+            <textarea id="message" name="message" rows="3" placeholder="例如：很想找固定一起練推擋或打雙打的夥伴～"></textarea>
+          </div>
+
+          <div id="status-box" class="status-msg"></div>
+
+          <button type="submit" id="submit-btn" class="submit-btn">🚀 送出資料並加入地圖</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 成功與 LINE 提醒卡片 -->
+    <div class="card" id="success-card" style="display: none;">
+      <div class="card-rainbow"></div>
+      <div class="card-content success-box">
+        <div class="success-icon">🎉</div>
+        <h2 class="success-title">太棒了，資料已成功送出！</h2>
+        <p class="success-subtitle">您的資訊已納入桌球同好地圖，球友們可以在地圖上看見您的彩虹旗與程度。</p>
+
+        <!-- 醒目 LINE 社團加入提醒 -->
+        <div class="line-reminder-card">
+          <div class="line-reminder-badge">⚠️ 最後一步必做</div>
+          <h3 class="line-reminder-title">請務必加入我們的 LINE 桌球社團！</h3>
+          <p class="line-reminder-desc">
+            找到同好後，我們平常都是在專屬 LINE 社群中即時約球、相約開團與交流！請記得點擊下方按鈕加入社團，大家很期待認識你喔！
+          </p>
+          <a id="line-btn" class="line-join-btn" href="#" target="_blank" rel="noopener noreferrer">
+            💬 立即點此加入 LINE 桌球社團
+          </a>
+        </div>
+
+        <a href="index.html" class="go-map-btn">
+          🗺️ 前往桌球地圖查看我的標記
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 台灣縣市與行政區對應表 (全台 22 縣市、368 行政區)
+    const countyDistricts = {
+      "臺北市":["士林區","大同區","大安區","中山區","中正區","內湖區","文山區","北投區","松山區","信義區","南港區","萬華區"],
+      "新北市":["八里區","三芝區","三重區","三峽區","土城區","中和區","五股區","平溪區","永和區","石門區","石碇區","汐止區","坪林區","板橋區","林口區","金山區","泰山區","烏來區","貢寮區","淡水區","深坑區","新店區","新莊區","瑞芳區","萬里區","樹林區","雙溪區","蘆洲區","鶯歌區"],
+      "基隆市":["七堵區","中山區","中正區","仁愛區","安樂區","信義區","暖暖區"],
+      "桃園市":["八德區","大園區","大溪區","中壢區","平鎮區","桃園區","復興區","新屋區","楊梅區","龍潭區","龜山區","蘆竹區","觀音區"],
+      "新竹市":["北區","東區","香山區"],
+      "新竹縣":["五峰鄉","北埔鄉","尖石鄉","竹北市","竹東鎮","芎林鄉","峨眉鄉","湖口鄉","新埔鎮","新豐鄉","橫山鄉","關西鎮","寶山鄉"],
+      "苗栗縣":["三義鄉","三灣鄉","大湖鄉","公館鄉","竹南鎮","西湖鄉","卓蘭鎮","南庄鄉","後龍鎮","苑裡鎮","苗栗市","泰安鄉","通霄鎮","造橋鄉","獅潭鄉","銅鑼鄉","頭份市","頭屋鄉"],
+      "臺中市":["大甲區","大安區","大肚區","大里區","大雅區","中區","太平區","北屯區","北區","外埔區","石岡區","后里區","西屯區","西區","沙鹿區","和平區","東區","東勢區","南屯區","南區","烏日區","神岡區","梧棲區","清水區","新社區","潭子區","龍井區","豐原區","霧峰區"],
+      "彰化縣":["二水鄉","二林鎮","大村鄉","大城鄉","北斗鎮","永靖鄉","田中鎮","田尾鄉","竹塘鄉","伸港鄉","秀水鄉","和美鎮","社頭鄉","芬園鄉","花壇鄉","芳苑鄉","員林市","埔心鄉","埔鹽鄉","埤頭鄉","鹿港鎮","溪州鄉","溪湖鎮","彰化市","福興鄉","線西鄉"],
+      "南投縣":["中寮鄉","仁愛鄉","水里鄉","名間鄉","竹山鎮","信義鄉","南投市","埔里鎮","草屯鎮","國姓鄉","魚池鄉","鹿谷鄉","集集鎮"],
+      "雲林縣":["二崙鄉","口湖鄉","土庫鎮","大埤鄉","元長鄉","斗六市","斗南鎮","水林鄉","北港鎮","古坑鄉","四湖鄉","西螺鎮","東勢鄉","林內鄉","虎尾鎮","崙背鄉","麥寮鄉","莿桐鄉","臺西鄉","褒忠鄉"],
+      "嘉義市":["西區","東區"],
+      "嘉義縣":["大林鎮","大埔鄉","中埔鄉","六腳鄉","太保市","水上鄉","布袋鎮","民雄鄉","朴子市","竹崎鄉","東石鄉","阿里山鄉","梅山鄉","鹿草鄉","番路鄉","新港鄉","溪口鄉","義竹鄉"],
+      "臺南市":["七股區","下營區","大內區","山上區","中西區","仁德區","六甲區","北門區","北區","左鎮區","永康區","玉井區","白河區","安平區","安定區","安南區","西港區","佳里區","官田區","東山區","東區","南化區","南區","後壁區","柳營區","將軍區","麻豆區","善化區","新化區","新市區","新營區","楠西區","學甲區","龍崎區","歸仁區","關廟區","鹽水區"],
+      "高雄市":["三民區","大社區","大寮區","大樹區","小港區","仁武區","內門區","六龜區","左營區","永安區","田寮區","甲仙區","杉林區","那瑪夏區","岡山區","林園區","阿蓮區","前金區","前鎮區","美濃區","苓雅區","茂林區","茄萣區","桃源區","梓官區","鳥松區","湖內區","新興區","楠梓區","路竹區","鼓山區","旗山區","旗津區","鳳山區","橋頭區","燕巢區","彌陀區","鹽埕區"],
+      "屏東縣":["九如鄉","三地門鄉","內埔鄉","竹田鄉","牡丹鄉","車城鄉","里港鄉","佳冬鄉","來義鄉","東港鎮","枋山鄉","枋寮鄉","林邊鄉","長治鄉","南州鄉","屏東市","恆春鎮","春日鄉","崁頂鄉","泰武鄉","琉球鄉","高樹鄉","新埤鄉","新園鄉","獅子鄉","萬丹鄉","萬巒鄉","滿州鄉","瑪家鄉","潮州鎮","霧臺鄉","麟洛鄉","鹽埔鄉"],
+      "宜蘭縣":["三星鄉","大同鄉","五結鄉","冬山鄉","壯圍鄉","宜蘭市","南澳鄉","員山鄉","頭城鎮","礁溪鄉","羅東鎮","蘇澳鎮"],
+      "花蓮縣":["玉里鎮","光復鄉","吉安鄉","秀林鄉","卓溪鄉","花蓮市","富里鄉","新城鄉","瑞穗鄉","萬榮鄉","壽豐鄉","鳳林鎮","豐濱鄉"],
+      "臺東縣":["大武鄉","太麻里鄉","成功鎮","池上鄉","卑南鄉","延平鄉","東河鄉","金峰鄉","長濱鄉","海端鄉","鹿野鄉","達仁鄉","綠島鄉","臺東市","關山鎮","蘭嶼鄉"],
+      "澎湖縣":["七美鄉","白沙鄉","西嶼鄉","馬公市","望安鄉","湖西鄉"],
+      "金門縣":["金沙鎮","金城鎮","金湖鎮","金寧鄉","烈嶼鄉","烏坵鄉"],
+      "連江縣":["北竿鄉","東引鄉","南竿鄉","莒光鄉"]
+    };
+
+    // 初始化縣市選單
+    const countySelect = document.getElementById("county");
+    const districtSelect = document.getElementById("district");
+
+    Object.keys(countyDistricts).forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = c;
+      countySelect.appendChild(opt);
+    });
+
+    countySelect.addEventListener("change", () => {
+      const selected = countySelect.value;
+      districtSelect.innerHTML = '<option value="">選擇鄉鎮市區...</option>';
+      if (!selected || !countyDistricts[selected]) {
+        districtSelect.disabled = true;
+        return;
+      }
+      districtSelect.disabled = false;
+      countyDistricts[selected].forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = opt.textContent = d;
+        districtSelect.appendChild(opt);
+      });
+    });
+
+    // 快捷標籤填入
+    document.querySelectorAll(".chip-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const inputId = btn.dataset.input;
+        const val = btn.dataset.val;
+        const target = document.getElementById(inputId);
+        if (target) {
+          target.value = val;
+          target.focus();
+        }
+      });
+    });
+
+    // LINE 社群連結初始化
+    const lineUrl = (window.APP_CONFIG && window.APP_CONFIG.LINE_COMMUNITY_URL) || "https://line.me/ti/g2/MLL932ZYs6ffmsQQ3zChMOY8DhusjZfaP_GP0w?utm_source=invitation&utm_medium=link_copy&utm_campaign=default";
+    document.getElementById("line-btn").href = lineUrl;
+
+    // 表單提交處理
+    const form = document.getElementById("join-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const statusBox = document.getElementById("status-box");
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      statusBox.style.display = "none";
+
+      const name = document.getElementById("name").value.trim();
+      const county = countySelect.value;
+      const district = districtSelect.value;
+      const locationDetail = document.getElementById("location-detail").value.trim();
+      const locationRaw = locationDetail || district || county;
+      const level = document.getElementById("level").value.trim();
+      const freeTime = document.getElementById("free-time").value.trim();
+      const role = document.querySelector('input[name="role"]:checked')?.value || "未填";
+      const single = document.querySelector('input[name="single"]:checked')?.value || "未填";
+      const message = document.getElementById("message").value.trim();
+
+      if (!name || !county || !district || !level || !freeTime) {
+        statusBox.textContent = "請完整填寫必填欄位！";
+        statusBox.className = "status-msg error";
+        return;
+      }
+
+      const newMember = {
+        id: Date.now(),
+        name,
+        county,
+        district,
+        city: district,
+        locationRaw,
+        level,
+        levelTag: "未分類",
+        freeTime,
+        role,
+        single,
+        message,
+        createdAt: new Date().toISOString()
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "正在同步資料至地圖...";
+
+      // 1. 本地暫存 (即時在本地顯示)
+      try {
+        const localList = JSON.parse(localStorage.getItem("table_tennis_custom_members") || "[]");
+        localList.push(newMember);
+        localStorage.setItem("table_tennis_custom_members", JSON.stringify(localList));
+      } catch (e) {
+        console.warn("LocalStorage error:", e);
+      }
+
+      // 2. 雲端 API 同步
+      const apiUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem("table_tennis_api_url");
+      if (apiUrl) {
+        try {
+          await fetch(apiUrl, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newMember)
+          });
+        } catch (err) {
+          console.warn("Cloud API sync notice:", err);
+        }
+      }
+
+      // 顯示成功卡片
+      document.getElementById("form-card").style.display = "none";
+      document.getElementById("success-card").style.display = "block";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  </script>
+</body>
+</html>
