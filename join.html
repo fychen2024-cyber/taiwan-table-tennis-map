@@ -461,6 +461,10 @@
           <a id="line-btn" class="line-join-btn" href="#" target="_blank" rel="noopener noreferrer">
             💬 立即點此加入 LINE 桌球社團
           </a>
+          <button type="button" id="btn-copy-intro" class="btn-outline" style="width: 100%; margin-top: 10px; padding: 11px; font-size: 14px; font-weight: 700; border-radius: 999px; background: #fff; border: 1.5px solid var(--accent); color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            📋 複製我的自我介紹（進群打招呼）
+          </button>
+          <div id="copy-hint" style="font-size: 12px; color: #137333; text-align: center; margin-top: 6px; display: none; font-weight: 600;">✅ 自我介紹已複製到剪貼簿！進群後直接貼上即可！</div>
         </div>
 
         <a href="index.html" class="go-map-btn">
@@ -611,6 +615,27 @@
       // 顯示成功卡片
       document.getElementById("form-card").style.display = "none";
       document.getElementById("success-card").style.display = "block";
+      // btn-copy-intro-handler
+
+      // 複製自我介紹事件
+      const copyBtn = document.getElementById("btn-copy-intro");
+      const copyHint = document.getElementById("copy-hint");
+      if (copyBtn) {
+        copyBtn.addEventListener("click", () => {
+          const introText = `嗨大家好！我是新球友 ${newMember.name}，住在 ${newMember.county} ${newMember.district}，桌球程度大約是【${newMember.level}】，較有空時間是【${newMember.freeTime}】！${newMember.message ? ("想說的話：" + newMember.message) : ""} 很期待跟各位球友一起切磋交流！🏓`;
+          navigator.clipboard.writeText(introText).then(() => {
+            if (copyHint) copyHint.style.display = "block";
+            copyBtn.textContent = "✅ 已複製！可進群貼上";
+            setTimeout(() => {
+              copyBtn.textContent = "📋 複製我的自我介紹（進群打招呼）";
+              if (copyHint) copyHint.style.display = "none";
+            }, 3000);
+          }).catch(e => {
+            alert(introText);
+          });
+        });
+      }
+
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   </script>

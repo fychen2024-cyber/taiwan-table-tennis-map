@@ -988,7 +988,21 @@
         console.warn("讀取本機球友快取失敗", e);
       }
 
-      // 2. 雲端 Google Sheets API
+      
+      // 2. 讀取 GitHub 儲存庫內建 members.json 資料庫
+      try {
+        const jsonResp = await fetch("data/members.json?t=" + Date.now());
+        if (jsonResp.ok) {
+          const jsonList = await jsonResp.json();
+          if (Array.isArray(jsonList) && jsonList.length > 0) {
+            currentList = mergeMemberLists(currentList, jsonList);
+          }
+        }
+      } catch (e) {
+        console.warn("讀取 data/members.json 失敗", e);
+      }
+
+      // 3. 雲端 Google Sheets API
       const currentApiUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem("table_tennis_api_url");
       if (currentApiUrl && currentApiUrl.trim() !== "") {
         try {

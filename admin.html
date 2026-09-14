@@ -641,6 +641,10 @@
           <svg id="refresh-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           重新整理
         </button>
+        <button type="button" class="btn btn-outline" id="btn-download-json" title="下載 members.json 資料庫檔">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          下載 JSON 資料檔
+        </button>
         <button type="button" class="btn btn-outline" id="btn-export-csv" title="匯出 CSV 試算表備份">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           匯出 CSV
@@ -1060,6 +1064,23 @@
       });
 
       // 2. 放入 local custom
+      
+      // 讀取 GitHub 儲存庫內建 members.json
+      try {
+        const jsonResp = await fetch('data/members.json?t=' + Date.now());
+        if (jsonResp.ok) {
+          const jsonList = await jsonResp.json();
+          if (Array.isArray(jsonList) && jsonList.length > 0) {
+            jsonList.forEach(m => {
+              const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+              mergedMap.set(key, { ...m, source: 'default' });
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('讀取 data/members.json 失敗', e);
+      }
+
       localCustom.forEach(m => {
         const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
         mergedMap.set(key, { ...m, source: 'custom' });
@@ -1369,6 +1390,41 @@
     });
 
     // 7. 匯出 CSV 備份功能 (UTF-8 BOM Excel 相容)
+    
+    // 下載 members.json 資料庫檔事件
+    const btnDownloadJson = document.getElementById('btn-download-json');
+    if (btnDownloadJson) {
+      btnDownloadJson.addEventListener('click', () => {
+        if (!allMembers.length) {
+          showToast('⚠️ 目前尚無資料可下載');
+          return;
+        }
+        const exportData = allMembers.map((m, idx) => ({
+          id: m.id || (idx + 1),
+          name: m.name || '',
+          city: m.city || m.district || m.county || '待確認',
+          county: m.county || '',
+          district: m.district || '',
+          locationRaw: m.locationRaw || (m.district ? `${m.county} ${m.district}` : m.county),
+          level: m.level || '未填',
+          levelTag: m.levelTag || m.level || '未分類',
+          freeTime: m.freeTime || '',
+          role: m.role || '未填',
+          single: m.single || '未填',
+          message: m.message || ''
+        }));
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'members.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('💾 members.json 下載完成！放到 data/ 資料夾推送到 GitHub 即可永久保存！');
+      });
+    }
+    // btn-download-json-handler
+
     document.getElementById('btn-export-csv').addEventListener('click', () => {
       if (!allMembers.length) {
         showToast('⚠️ 目前尚無資料可匯出');
