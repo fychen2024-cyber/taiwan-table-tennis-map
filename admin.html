@@ -1121,20 +1121,34 @@
 
       // 2. 放入 local custom
       
-      // 讀取 GitHub 儲存庫內建 members.json
-      try {
-        const jsonResp = await fetch('data/members.json?t=' + Date.now());
-        if (jsonResp.ok) {
-          const jsonList = await jsonResp.json();
-          if (Array.isArray(jsonList) && jsonList.length > 0) {
-            jsonList.forEach(m => {
+      // 讀取 GitHub 雲端倉庫最新 members.json (優先透過 TableTennisSync 直連 API 零延遲)
+      if (window.TableTennisSync) {
+        try {
+          const syncRes = await window.TableTennisSync.fetchRemoteMembers();
+          if (syncRes && syncRes.members && syncRes.members.length > 0) {
+            syncRes.members.forEach(m => {
               const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
               mergedMap.set(key, { ...m, source: 'default' });
             });
           }
+        } catch (e) {
+          console.warn('TableTennisSync 讀取失敗', e);
         }
-      } catch (e) {
-        console.warn('讀取 data/members.json 失敗', e);
+      } else {
+        try {
+          const jsonResp = await fetch('data/members.json?t=' + Date.now());
+          if (jsonResp.ok) {
+            const jsonList = await jsonResp.json();
+            if (Array.isArray(jsonList) && jsonList.length > 0) {
+              jsonList.forEach(m => {
+                const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+                mergedMap.set(key, { ...m, source: 'default' });
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('讀取 data/members.json 失敗', e);
+        }
       }
 
       localCustom.forEach(m => {
@@ -1360,9 +1374,10 @@
       }
 
       // 2. 同步至 Google Sheets API (若有設定)
-      if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== '') {
+      const apiUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem('table_tennis_api_url');
+      if (apiUrl && apiUrl.trim() !== '') {
         try {
-          await fetch(currentApiUrl, {
+          await fetch(apiUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1381,8 +1396,8 @@
       await loadMembers();
 
       // 自動同步至 GitHub
-      if (getGitHubToken()) {
-        syncToGitHubApi(allMembers, isEdit ? `feat: 修改球友資料 (${name})` : `feat: 新增球友資料 (${name})`).then(ok => {
+      if (window.TableTennisSync) {
+        window.TableTennisSync.saveRemoteMembers(allMembers, isEdit ? `feat: 修改球友資料 (${name})` : `feat: 新增球友資料 (${name})`).then(ok => {
           if (ok) showToast('☁️ 已自動同步寫入 GitHub 雲端！');
         });
       }
@@ -1449,9 +1464,9 @@
       closeDeleteModal();
       showToast('🗑️ 已刪除球友資料');
       // 自動同步至 GitHub
-      if (getGitHubToken()) {
+      if (window.TableTennisSync) {
         const remaining = allMembers.filter(m => String(m.id) !== String(deleteTargetId));
-        syncToGitHubApi(remaining, `feat: 刪除球友 (${targetName})`).then(ok => {
+        window.TableTennisSync.saveRemoteMembers(remaining, `feat: 刪除球友 (${targetName})`).then(ok => {
           if (ok) showToast('☁️ 已自動自 GitHub 雲端移除！');
         });
       }
@@ -1643,102 +1658,21 @@
       });
     }
 
-    // 自動預先綁定 GitHub Token (若瀏覽器尚未設定)
-    const PRECONFIGURED_GH_TOKEN = (window.APP_CONFIG && window.APP_CONFIG.GITHUB_TOKEN) || ["ghp", "_ThfVmwDhBJ85", "Qzld7u1qM2j0", "bj1gXG0VJAgH"].join("");
-    try {
-      if (!localStorage.getItem('table_tennis_gh_token') && PRECONFIGURED_GH_TOKEN) {
-        localStorage.setItem('table_tennis_gh_token', PRECONFIGURED_GH_TOKEN);
-      }
-    } catch (e) {}
-
-    // GitHub API 自動 Commit 模組
+    // GitHub API 存取權杖取得
     function getGitHubToken() {
-      return localStorage.getItem('table_tennis_gh_token') || (window.APP_CONFIG && window.APP_CONFIG.GITHUB_TOKEN) || PRECONFIGURED_GH_TOKEN || '';
-    }
-
-    function getGitHubRepoConfig() {
-      return {
-        owner: (window.APP_CONFIG && window.APP_CONFIG.GITHUB_OWNER) || 'fychen2024-cyber',
-        repo: (window.APP_CONFIG && window.APP_CONFIG.GITHUB_REPO) || 'taiwan-table-tennis-map',
-        filePath: (window.APP_CONFIG && window.APP_CONFIG.GITHUB_FILE_PATH) || 'data/members.json'
-      };
-    }
-
-    function formatMembersForExport(members) {
-      return (members || []).map((m, idx) => ({
-        id: m.id || (idx + 1),
-        name: m.name || '',
-        city: m.city || m.district || m.county || '待確認',
-        county: m.county || '',
-        district: m.district || '',
-        locationRaw: m.locationRaw || (m.district ? `${m.county} ${m.district}` : m.county),
-        level: m.level || '未填',
-        levelTag: m.levelTag || m.level || '未分類',
-        freeTime: m.freeTime || '',
-        role: m.role || '未填',
-        single: m.single || '未填',
-        message: m.message || ''
-      }));
+      if (window.TableTennisSync) return window.TableTennisSync.getToken();
+      try {
+        const local = localStorage.getItem('table_tennis_gh_token');
+        if (local && local.trim()) return local.trim();
+      } catch (e) {}
+      return (window.APP_CONFIG && window.APP_CONFIG.GITHUB_TOKEN) || '';
     }
 
     async function syncToGitHubApi(memberList, commitMsg = 'chore: 更新桌球同好名冊 (via Admin)') {
-      const token = getGitHubToken();
-      if (!token) return false;
-
-      const { owner, repo, filePath } = getGitHubRepoConfig();
-      const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
-
-      try {
-        // 1. 取得當前 SHA
-        let sha = null;
-        const getRes = await fetch(apiUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
-        if (getRes.ok) {
-          const data = await getRes.json();
-          sha = data.sha;
-        }
-
-        // 2. 轉換 Base64 (支援 UTF-8 繁體中文)
-        const exportData = formatMembersForExport(memberList);
-        const contentStr = JSON.stringify(exportData, null, 2);
-        const utf8Bytes = new TextEncoder().encode(contentStr);
-        let binary = '';
-        for (let i = 0; i < utf8Bytes.length; i++) {
-          binary += String.fromCharCode(utf8Bytes[i]);
-        }
-        const base64Content = btoa(binary);
-
-        // 3. 發送 PUT 提交更新
-        const putRes = await fetch(apiUrl, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            message: commitMsg,
-            content: base64Content,
-            sha: sha || undefined
-          })
-        });
-
-        if (putRes.ok) {
-          console.log('GitHub API direct commit succeeded!');
-          return true;
-        } else {
-          const errData = await putRes.json();
-          console.warn('GitHub API commit failed:', errData);
-          return false;
-        }
-      } catch (err) {
-        console.warn('GitHub API sync error:', err);
-        return false;
+      if (window.TableTennisSync) {
+        return await window.TableTennisSync.saveRemoteMembers(memberList, commitMsg);
       }
+      return false;
     }
 
     // GitHub 彈窗處理

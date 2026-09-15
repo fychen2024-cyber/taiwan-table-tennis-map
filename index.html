@@ -976,11 +976,13 @@
       let currentList = defaultMembers.filter(m => !deletedDefaultIds.has(m.id));
 
       // 1. 本機暫存 (localStorage)
+      let localCustom = [];
       try {
         const localData = localStorage.getItem("table_tennis_custom_members");
         if (localData) {
           const parsed = JSON.parse(localData);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            localCustom = parsed;
             currentList = mergeMemberLists(currentList, parsed);
           }
         }
@@ -988,21 +990,31 @@
         console.warn("讀取本機球友快取失敗", e);
       }
 
-      
-      // 2. 讀取 GitHub 儲存庫內建 members.json 資料庫
-      try {
-        const jsonResp = await fetch("data/members.json?t=" + Date.now());
-        if (jsonResp.ok) {
-          const jsonList = await jsonResp.json();
-          if (Array.isArray(jsonList) && jsonList.length > 0) {
-            currentList = mergeMemberLists(currentList, jsonList);
+      // 2. 讀取 GitHub 雲端倉庫即時 members.json 資料庫 (使用 TableTennisSync 直連 API，零延遲)
+      if (window.TableTennisSync) {
+        try {
+          const syncRes = await window.TableTennisSync.fetchRemoteMembers();
+          if (syncRes && syncRes.members && syncRes.members.length > 0) {
+            currentList = mergeMemberLists(currentList, syncRes.members);
           }
+        } catch (e) {
+          console.warn("TableTennisSync 讀取失敗", e);
         }
-      } catch (e) {
-        console.warn("讀取 data/members.json 失敗", e);
+      } else {
+        try {
+          const jsonResp = await fetch("data/members.json?t=" + Date.now());
+          if (jsonResp.ok) {
+            const jsonList = await jsonResp.json();
+            if (Array.isArray(jsonList) && jsonList.length > 0) {
+              currentList = mergeMemberLists(currentList, jsonList);
+            }
+          }
+        } catch (e) {
+          console.warn("讀取 data/members.json 失敗", e);
+        }
       }
 
-      // 3. 雲端 Google Sheets API
+      // 3. 雲端 Google Sheets API (若有綁定)
       const currentApiUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem("table_tennis_api_url");
       if (currentApiUrl && currentApiUrl.trim() !== "") {
         try {
@@ -1017,6 +1029,11 @@
         } catch (e) {
           console.warn("無法連線至 Google Sheets API，使用快取或預設資料", e);
         }
+      }
+
+      // 若手動點擊「重新同步」，且本機有自訂資料，自動向 GitHub 提交備份
+      if (showFeedback && window.TableTennisSync && localCustom.length > 0) {
+        window.TableTennisSync.saveRemoteMembers(currentList, 'feat: 透過主畫面手動重新同步更新名單').catch(() => {});
       }
 
       members = currentList;

@@ -586,7 +586,7 @@
       };
 
       submitBtn.disabled = true;
-      submitBtn.textContent = "正在同步資料至地圖...";
+      submitBtn.textContent = "正在同步資料至雲端地圖...";
 
       // 1. 本地暫存 (即時在本地顯示)
       try {
@@ -597,7 +597,16 @@
         console.warn("LocalStorage error:", e);
       }
 
-      // 2. 雲端 API 同步
+      // 2. 雲端 GitHub 倉庫直連同步 (永久儲存，無痕或換設備絕不消失)
+      if (window.TableTennisSync) {
+        try {
+          await window.TableTennisSync.addMemberToRemote(newMember, `feat: 新球友加入 (${newMember.name})`);
+        } catch (err) {
+          console.warn("GitHub 雲端同步異常:", err);
+        }
+      }
+
+      // 3. 雲端 Google Sheets API 同步 (若有設定)
       const apiUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem("table_tennis_api_url");
       if (apiUrl) {
         try {
