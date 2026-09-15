@@ -967,13 +967,21 @@
       if (refreshBtn) refreshBtn.classList.add("spinning");
       if (refreshText && showFeedback) refreshText.textContent = "同步中...";
 
-      // 取得被標記刪除的預設 ID
+      // 取得被標記刪除的預設 ID (相容字串與數字)
       let deletedDefaultIds = new Set();
       try {
         const rawDel = localStorage.getItem("table_tennis_deleted_default_ids");
-        if (rawDel) deletedDefaultIds = new Set(JSON.parse(rawDel));
+        if (rawDel) {
+          const parsed = JSON.parse(rawDel);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(x => {
+              deletedDefaultIds.add(String(x));
+              deletedDefaultIds.add(Number(x));
+            });
+          }
+        }
       } catch (e) {}
-      let currentList = defaultMembers.filter(m => !deletedDefaultIds.has(m.id));
+      let currentList = defaultMembers.filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)));
 
       // 1. 本機暫存 (localStorage)
       let localCustom = [];
@@ -982,8 +990,8 @@
         if (localData) {
           const parsed = JSON.parse(localData);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            localCustom = parsed;
-            currentList = mergeMemberLists(currentList, parsed);
+            localCustom = parsed.filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)));
+            currentList = mergeMemberLists(currentList, localCustom);
           }
         }
       } catch (e) {
@@ -995,18 +1003,20 @@
         try {
           const syncRes = await window.TableTennisSync.fetchRemoteMembers();
           if (syncRes && syncRes.members && syncRes.members.length > 0) {
-            currentList = mergeMemberLists(currentList, syncRes.members);
+            const filteredRemote = syncRes.members.filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)));
+            currentList = mergeMemberLists(currentList, filteredRemote);
           }
         } catch (e) {
           console.warn("TableTennisSync 讀取失敗", e);
         }
       } else {
         try {
-          const jsonResp = await fetch("data/members.json?t=" + Date.now());
+          const jsonResp = await fetch("data/members.json?t=" + Date.now(), { cache: "no-store" });
           if (jsonResp.ok) {
             const jsonList = await jsonResp.json();
             if (Array.isArray(jsonList) && jsonList.length > 0) {
-              currentList = mergeMemberLists(currentList, jsonList);
+              const filteredJson = jsonList.filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)));
+              currentList = mergeMemberLists(currentList, filteredJson);
             }
           }
         } catch (e) {
@@ -1023,7 +1033,8 @@
             const result = await resp.json();
             const remoteList = Array.isArray(result) ? result : (result.data || []);
             if (Array.isArray(remoteList) && remoteList.length > 0) {
-              currentList = mergeMemberLists(currentList, remoteList);
+              const filteredCloud = remoteList.filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)));
+              currentList = mergeMemberLists(currentList, filteredCloud);
             }
           }
         } catch (e) {

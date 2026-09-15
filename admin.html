@@ -1054,15 +1054,23 @@
       if (refreshIcon) refreshIcon.parentElement.classList.add('spinning');
       const statusBadge = document.getElementById('api-status-badge');
 
-      // 取得被標記刪除的預設 ID
+      // 取得被標記刪除的預設 ID (相容字串與數字)
       let deletedDefaultIds = new Set();
       try {
         const rawDel = localStorage.getItem('table_tennis_deleted_default_ids');
-        if (rawDel) deletedDefaultIds = new Set(JSON.parse(rawDel));
+        if (rawDel) {
+          const parsed = JSON.parse(rawDel);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(x => {
+              deletedDefaultIds.add(String(x));
+              deletedDefaultIds.add(Number(x));
+            });
+          }
+        }
       } catch (e) {}
 
       // 基礎列表：排除已被刪除的預設成員
-      let baseList = initialDefaultMembers.filter(m => !deletedDefaultIds.has(m.id)).map(m => ({
+      let baseList = initialDefaultMembers.filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id))).map(m => ({
         ...m,
         source: 'default'
       }));
@@ -1119,31 +1127,35 @@
         mergedMap.set(key, m);
       });
 
-      // 2. 放入 local custom
+      // 2. 放入 local custom 與 GitHub 雲端資料 (自動排除已被標記刪除的名單)
       
       // 讀取 GitHub 雲端倉庫最新 members.json (優先透過 TableTennisSync 直連 API 零延遲)
       if (window.TableTennisSync) {
         try {
           const syncRes = await window.TableTennisSync.fetchRemoteMembers();
           if (syncRes && syncRes.members && syncRes.members.length > 0) {
-            syncRes.members.forEach(m => {
-              const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
-              mergedMap.set(key, { ...m, source: 'default' });
-            });
+            syncRes.members
+              .filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)))
+              .forEach(m => {
+                const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+                mergedMap.set(key, { ...m, source: 'default' });
+              });
           }
         } catch (e) {
           console.warn('TableTennisSync 讀取失敗', e);
         }
       } else {
         try {
-          const jsonResp = await fetch('data/members.json?t=' + Date.now());
+          const jsonResp = await fetch('data/members.json?t=' + Date.now(), { cache: 'no-store' });
           if (jsonResp.ok) {
             const jsonList = await jsonResp.json();
             if (Array.isArray(jsonList) && jsonList.length > 0) {
-              jsonList.forEach(m => {
-                const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
-                mergedMap.set(key, { ...m, source: 'default' });
-              });
+              jsonList
+                .filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)))
+                .forEach(m => {
+                  const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+                  mergedMap.set(key, { ...m, source: 'default' });
+                });
             }
           }
         } catch (e) {
@@ -1151,16 +1163,20 @@
         }
       }
 
-      localCustom.forEach(m => {
-        const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
-        mergedMap.set(key, { ...m, source: 'custom' });
-      });
+      localCustom
+        .filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)))
+        .forEach(m => {
+          const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+          mergedMap.set(key, { ...m, source: 'custom' });
+        });
 
       // 3. 放入 cloud
-      cloudList.forEach(m => {
-        const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
-        mergedMap.set(key, { ...m, source: 'custom' });
-      });
+      cloudList
+        .filter(m => !deletedDefaultIds.has(m.id) && !deletedDefaultIds.has(String(m.id)))
+        .forEach(m => {
+          const key = `${m.name}_${m.district}_${normalizeCountyName(m.county)}`;
+          mergedMap.set(key, { ...m, source: 'custom' });
+        });
 
       allMembers = Array.from(mergedMap.values());
 
@@ -1254,11 +1270,11 @@
           <td class="msg-preview" title="${escapeHtml(m.message || '')}">${escapeHtml(m.message || '-')}</td>
           <td style="text-align: right; padding-right: 20px;">
             <div class="row-actions" style="justify-content: flex-end;">
-              <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="openEditModal(${m.id})">
+              <button type="button" class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="openEditModal('${m.id}')">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 編輯
               </button>
-              <button type="button" class="btn btn-danger-outline" style="padding: 4px 8px; font-size: 12px;" onclick="openDeleteModal(${m.id}, '${escapeJsString(m.name)}')">
+              <button type="button" class="btn btn-danger-outline" style="padding: 4px 8px; font-size: 12px;" onclick="openDeleteModal('${m.id}', '${escapeJsString(m.name)}')">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 刪除
               </button>
@@ -1405,7 +1421,7 @@
 
     // 6. 刪除彈窗操作
     window.openDeleteModal = function(id, name) {
-      deleteTargetId = id;
+      deleteTargetId = String(id);
       document.getElementById('delete-target-name').textContent = name;
       document.getElementById('delete-modal').classList.add('active');
     };
@@ -1419,58 +1435,90 @@
 
     document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
       if (!deleteTargetId) return;
-      const targetMember = allMembers.find(m => String(m.id) === String(deleteTargetId));
-      const targetName = targetMember ? targetMember.name : '';
+      const targetIdToDel = String(deleteTargetId);
+      const targetMember = allMembers.find(m => String(m.id) === targetIdToDel);
+      const targetName = targetMember ? targetMember.name : (document.getElementById('delete-target-name').textContent || '').trim();
 
-      // 1. 若是預設成員，將 ID 加入 deleted_default_ids
-      if (targetMember && targetMember.source === 'default') {
+      const confirmBtn = document.getElementById('btn-confirm-delete');
+      const originalText = confirmBtn.textContent;
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '正在刪除...';
+
+      try {
+        // 1. 將 ID 加入 deleted_default_ids (記錄至 localStorage 防止舊快取復原)
         try {
           let delSet = new Set();
           const rawDel = localStorage.getItem('table_tennis_deleted_default_ids');
-          if (rawDel) delSet = new Set(JSON.parse(rawDel));
-          delSet.add(targetMember.id);
+          if (rawDel) {
+            const parsed = JSON.parse(rawDel);
+            if (Array.isArray(parsed)) parsed.forEach(x => delSet.add(String(x)));
+          }
+          delSet.add(targetIdToDel);
+          if (targetMember && targetMember.id) delSet.add(String(targetMember.id));
           localStorage.setItem('table_tennis_deleted_default_ids', JSON.stringify(Array.from(delSet)));
         } catch (e) {}
-      }
 
-      // 2. 從 local custom members 移除
-      try {
-        const rawLocal = localStorage.getItem('table_tennis_custom_members');
-        if (rawLocal) {
-          let localList = JSON.parse(rawLocal);
-          localList = localList.filter(m => String(m.id) !== String(deleteTargetId) && m.name !== targetName);
-          localStorage.setItem('table_tennis_custom_members', JSON.stringify(localList));
-        }
-      } catch (e) {}
-
-      // 3. 發送 delete action 到 Google Sheets API
-      if (window.APP_CONFIG && window.APP_CONFIG.API_URL && window.APP_CONFIG.API_URL.trim() !== '') {
+        // 2. 從 local custom members 移除
         try {
-          await fetch(window.APP_CONFIG.API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'delete',
-              id: deleteTargetId,
-              name: targetName
-            })
-          });
-        } catch (e) {
-          console.warn('雲端刪除失敗', e);
-        }
-      }
+          const rawLocal = localStorage.getItem('table_tennis_custom_members');
+          if (rawLocal) {
+            let localList = JSON.parse(rawLocal);
+            if (Array.isArray(localList)) {
+              localList = localList.filter(m => String(m.id) !== targetIdToDel && (!targetName || m.name !== targetName));
+              localStorage.setItem('table_tennis_custom_members', JSON.stringify(localList));
+            }
+          }
+        } catch (e) {}
 
-      closeDeleteModal();
-      showToast('🗑️ 已刪除球友資料');
-      // 自動同步至 GitHub
-      if (window.TableTennisSync) {
-        const remaining = allMembers.filter(m => String(m.id) !== String(deleteTargetId));
-        window.TableTennisSync.saveRemoteMembers(remaining, `feat: 刪除球友 (${targetName})`).then(ok => {
-          if (ok) showToast('☁️ 已自動自 GitHub 雲端移除！');
-        });
+        // 3. 發送 delete action 到 Google Sheets API (若有設定)
+        const apiUrl = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem('table_tennis_api_url');
+        if (apiUrl && apiUrl.trim() !== '') {
+          try {
+            await fetch(apiUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({
+                action: 'delete',
+                id: targetIdToDel,
+                name: targetName
+              })
+            });
+          } catch (e) {
+            console.warn('雲端 Google Sheets 刪除失敗', e);
+          }
+        }
+
+        // 4. 計算 remaining 名單（排除 targetIdToDel 與 targetName）
+        const remaining = allMembers.filter(m => String(m.id) !== targetIdToDel && (!targetName || m.name !== targetName));
+
+        // 5. 自動同步至 GitHub 雲端倉庫 (等待 commit 完成)
+        if (window.TableTennisSync) {
+          try {
+            const ok = await window.TableTennisSync.saveRemoteMembers(remaining, `feat: 刪除球友 (${targetName || targetIdToDel})`);
+            if (ok) {
+              showToast('☁️ 已自 GitHub 雲端移除！');
+            } else {
+              showToast('⚠️ 雲端移除未成功，已於本機完成刪除');
+            }
+          } catch (e) {
+            console.warn('GitHub 同步刪除失敗', e);
+          }
+        }
+
+        // 6. 關閉彈窗並提示
+        closeDeleteModal();
+        showToast('🗑️ 已刪除球友資料');
+
+        // 7. 重新載入最新資料更新畫面
+        await loadMembers();
+      } catch (err) {
+        console.error('刪除過程異常', err);
+        showToast('❌ 刪除失敗，請重新整理後再試');
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
       }
-      loadMembers();
     });
 
     // 7. 匯出 CSV 備份功能 (UTF-8 BOM Excel 相容)

@@ -593,6 +593,15 @@
         const localList = JSON.parse(localStorage.getItem("table_tennis_custom_members") || "[]");
         localList.push(newMember);
         localStorage.setItem("table_tennis_custom_members", JSON.stringify(localList));
+
+        const rawDel = localStorage.getItem("table_tennis_deleted_default_ids");
+        if (rawDel) {
+          let delList = JSON.parse(rawDel);
+          if (Array.isArray(delList)) {
+            delList = delList.filter(x => String(x) !== String(newMember.id));
+            localStorage.setItem("table_tennis_deleted_default_ids", JSON.stringify(delList));
+          }
+        }
       } catch (e) {
         console.warn("LocalStorage error:", e);
       }

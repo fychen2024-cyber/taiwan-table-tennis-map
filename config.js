@@ -79,11 +79,12 @@ window.APP_CONFIG = {
       // 1. 優先使用 GitHub API (即時回傳 main 分支最新資料，零快取延遲)
       if (token) {
         try {
-          const res = await fetch(apiUrl, {
+          const res = await fetch(`${apiUrl}?t=${Date.now()}`, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Accept': 'application/vnd.github.v3+json'
-            }
+            },
+            cache: 'no-store'
           });
           if (res.ok) {
             const data = await res.json();
@@ -102,7 +103,7 @@ window.APP_CONFIG = {
 
       // 2. 次要嘗試 raw.githubusercontent.com (加時間戳避免快取)
       try {
-        const rawRes = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/${filePath}?t=${Date.now()}`);
+        const rawRes = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/${filePath}?t=${Date.now()}`, { cache: 'no-store' });
         if (rawRes.ok) {
           const list = await rawRes.json();
           if (Array.isArray(list) && list.length > 0) {
@@ -113,7 +114,7 @@ window.APP_CONFIG = {
 
       // 3. 最後嘗試相對路徑 data/members.json
       try {
-        const localRes = await fetch(`${filePath}?t=${Date.now()}`);
+        const localRes = await fetch(`${filePath}?t=${Date.now()}`, { cache: 'no-store' });
         if (localRes.ok) {
           const list = await localRes.json();
           if (Array.isArray(list) && list.length > 0) {
@@ -137,13 +138,14 @@ window.APP_CONFIG = {
       const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
 
       try {
-        // 1. 取得當前 SHA
+        // 1. 取得當前 SHA (避免快取)
         let sha = null;
-        const getRes = await fetch(apiUrl, {
+        const getRes = await fetch(`${apiUrl}?t=${Date.now()}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/vnd.github.v3+json'
-          }
+          },
+          cache: 'no-store'
         });
         if (getRes.ok) {
           const data = await getRes.json();
@@ -198,6 +200,24 @@ window.APP_CONFIG = {
         return ok;
       } catch (err) {
         console.warn('addMemberToRemote 異常:', err);
+        return false;
+      }
+    },
+
+    // 從雲端刪除成員 (自動讀取現有名單 -> 移除符合條件的球友 -> 立即 Commit)
+    async deleteMemberFromRemote(targetId, targetName, commitMsg) {
+      try {
+        const remoteRes = await this.fetchRemoteMembers();
+        let list = remoteRes.members || [];
+        list = list.filter(m => {
+          if (targetId && String(m.id) === String(targetId)) return false;
+          if (targetName && m.name === targetName) return false;
+          return true;
+        });
+        const ok = await this.saveRemoteMembers(list, commitMsg || `feat: 刪除球友 (${targetName || targetId})`);
+        return ok;
+      } catch (err) {
+        console.warn('deleteMemberFromRemote 異常:', err);
         return false;
       }
     }
