@@ -96,19 +96,5 @@
     "role": "000",
     "single": "是",
     "message": "歡樂打桌球，打桌球真歡樂"
-  },
-  {
-    "id": 1789438282646,
-    "name": "ddd",
-    "city": "莿桐鄉",
-    "county": "雲林縣",
-    "district": "莿桐鄉",
-    "locationRaw": "雲林縣 莿桐鄉",
-    "level": "系隊中",
-    "levelTag": "系隊中",
-    "freeTime": "平日晚上",
-    "role": "不分",
-    "single": "是",
-    "message": "ddd"
   }
 ]
