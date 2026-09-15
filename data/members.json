@@ -96,5 +96,19 @@
     "role": "000",
     "single": "是",
     "message": "歡樂打桌球，打桌球真歡樂"
+  },
+  {
+    "id": 999999,
+    "name": "連線測試員",
+    "city": "信義區",
+    "county": "臺北市",
+    "district": "信義區",
+    "locationRaw": "臺北市信義區",
+    "level": "校隊",
+    "levelTag": "校隊",
+    "freeTime": "平日晚上",
+    "role": "不分",
+    "single": "是",
+    "message": "雲端同步驗證測試"
   }
 ]
