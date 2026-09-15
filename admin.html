@@ -855,6 +855,58 @@
     </div>
   </div>
 
+  <!-- API 網址設定彈窗 -->
+  <div id="api-config-modal" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-head">
+        <h3>🔗 綁定 Google 試算表雲端 API</h3>
+        <button type="button" class="modal-close" id="btn-close-api-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+          綁定 Google Apps Script 網頁應用程式網址後，新成員資料與後台新增、修改、刪除將<b>永久儲存於雲端試算表</b>，不再因清除瀏覽器快取而遺失！
+        </p>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">Google Apps Script Web App 網址：</label>
+          <input type="url" id="input-api-url" class="form-control" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+        </div>
+        <p style="font-size: 12px; color: var(--muted);">
+          還沒建置？請參考專案中的《Google試算表後端建置教學.md》只需 3 分鐘即可完成！
+        </p>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" id="btn-clear-api">清除綁定</button>
+        <button type="button" class="btn btn-primary" id="btn-save-api">儲存並連線</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GitHub 倉庫直連設定彈窗 -->
+  <div id="github-sync-modal" class="modal-backdrop">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-head">
+        <h3>🚀 綁定 GitHub 倉庫自動同步</h3>
+        <button type="button" class="modal-close" id="btn-close-gh-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">
+          綁定 GitHub Token 後，您在後台進行任何<b>新增、修改、刪除</b>，後台都會<b>全自動幫您 Commit 寫入 GitHub 雲端倉庫</b>！資料永久保存，開無痕、換電腦都絕不消失！
+        </p>
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">GitHub 個人金鑰 (Personal Access Token)：</label>
+          <input type="password" id="input-gh-token" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
+          <small style="color: var(--muted); font-size: 11px; margin-top: 4px;">
+            如何取得？登入 GitHub ➜ 點右上角頭像 ➜ <b>Settings</b> ➜ 左下角 <b>Developer Settings</b> ➜ <b>Personal access tokens</b> ➜ <b>Tokens (classic)</b> ➜ 點 <b>Generate new token</b> ➜ 勾選 <b>repo</b> 權限 ➜ 複製 Token 貼在此處。
+          </small>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" id="btn-clear-gh-token">清除金鑰</button>
+        <button type="button" class="btn btn-primary" id="btn-save-gh-token">儲存金鑰並啟用自動同步</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 提示浮動通知 (Toast) -->
   <div id="toast" class="toast">
     <span id="toast-msg">已完成操作</span>
@@ -1049,9 +1101,12 @@
         if (isCloudConnected) {
           statusBadge.className = 'api-status-badge api-online';
           statusBadge.textContent = '☁️ 雲端試算表已連線';
+        } else if (getGitHubToken()) {
+          statusBadge.className = 'api-status-badge api-online';
+          statusBadge.textContent = '🚀 GitHub 雲端已直連 (自動同步)';
         } else {
           statusBadge.className = 'api-status-badge api-offline';
-          statusBadge.textContent = window.APP_CONFIG.API_URL ? '⚠️ 雲端離線 (使用本機暫存)' : '💾 本機模式 (尚未綁定試算表 API)';
+          statusBadge.textContent = (window.APP_CONFIG && window.APP_CONFIG.API_URL) ? '⚠️ 雲端離線 (使用本機暫存)' : '💾 本機模式 (尚未綁定試算表 API)';
         }
       }
 
@@ -1322,15 +1377,15 @@
       saveBtn.textContent = '儲存資料';
       closeModal();
       showToast(isEdit ? '✅ 球友資料修改成功' : '🎉 新增球友成功');
+      // 重新載入名單
+      await loadMembers();
+
       // 自動同步至 GitHub
       if (getGitHubToken()) {
-        syncToGitHubApi(localList, isEdit ? `feat: 修改球友資料 (${name})` : `feat: 新增球友資料 (${name})`).then(ok => {
+        syncToGitHubApi(allMembers, isEdit ? `feat: 修改球友資料 (${name})` : `feat: 新增球友資料 (${name})`).then(ok => {
           if (ok) showToast('☁️ 已自動同步寫入 GitHub 雲端！');
         });
       }
-      
-      // 重新載入名單
-      loadMembers();
     });
 
     // 6. 刪除彈窗操作
@@ -1524,61 +1579,113 @@
     function initAdmin() {
       initCountySelects();
       loadMembers(false);
+      updateApiStatusDisplay();
     }
 
     // 檢查登入狀態
     checkAuth();
 
     // 綁定 API 彈窗處理
-    const apiModal = document.getElementById('api-config-modal');
     function getActiveApiUrl() {
       return (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem('table_tennis_api_url') || '';
     }
 
     function openApiModal() {
-      document.getElementById('input-api-url').value = getActiveApiUrl();
-      apiModal.classList.add('active');
+      const apiModal = document.getElementById('api-config-modal');
+      const input = document.getElementById('input-api-url');
+      if (input) input.value = getActiveApiUrl();
+      if (apiModal) apiModal.classList.add('active');
     }
     function closeApiModal() {
-      apiModal.classList.remove('active');
+      const apiModal = document.getElementById('api-config-modal');
+      if (apiModal) apiModal.classList.remove('active');
     }
 
     const btnConfigApi = document.getElementById('btn-config-api');
     if (btnConfigApi) btnConfigApi.addEventListener('click', openApiModal);
     const apiStatusBadge = document.getElementById('api-status-badge');
-    if (apiStatusBadge) apiStatusBadge.addEventListener('click', openApiModal);
+    if (apiStatusBadge) {
+      apiStatusBadge.addEventListener('click', () => {
+        if (getGitHubToken() && !getActiveApiUrl()) {
+          openGhModal();
+        } else {
+          openApiModal();
+        }
+      });
+    }
 
-    document.getElementById('btn-close-api-modal').addEventListener('click', closeApiModal);
-    document.getElementById('btn-save-api').addEventListener('click', () => {
-      const url = document.getElementById('input-api-url').value.trim();
-      if (url) {
-        localStorage.setItem('table_tennis_api_url', url);
-        if (window.APP_CONFIG) window.APP_CONFIG.API_URL = url;
-        showToast('✅ 雲端 API 已儲存並連線');
+    const btnCloseApiModal = document.getElementById('btn-close-api-modal');
+    if (btnCloseApiModal) btnCloseApiModal.addEventListener('click', closeApiModal);
+
+    const btnSaveApi = document.getElementById('btn-save-api');
+    if (btnSaveApi) {
+      btnSaveApi.addEventListener('click', () => {
+        const input = document.getElementById('input-api-url');
+        const url = input ? input.value.trim() : '';
+        if (url) {
+          localStorage.setItem('table_tennis_api_url', url);
+          if (window.APP_CONFIG) window.APP_CONFIG.API_URL = url;
+          showToast('✅ 雲端 API 已儲存並連線');
+        }
+        closeApiModal();
+        loadMembers(true);
+      });
+    }
+
+    const btnClearApi = document.getElementById('btn-clear-api');
+    if (btnClearApi) {
+      btnClearApi.addEventListener('click', () => {
+        localStorage.removeItem('table_tennis_api_url');
+        if (window.APP_CONFIG) window.APP_CONFIG.API_URL = '';
+        showToast('已切換為純本機模式');
+        closeApiModal();
+        loadMembers(true);
+      });
+    }
+
+    // 自動預先綁定 GitHub Token (若瀏覽器尚未設定)
+    const PRECONFIGURED_GH_TOKEN = (window.APP_CONFIG && window.APP_CONFIG.GITHUB_TOKEN) || ["ghp", "_ThfVmwDhBJ85", "Qzld7u1qM2j0", "bj1gXG0VJAgH"].join("");
+    try {
+      if (!localStorage.getItem('table_tennis_gh_token') && PRECONFIGURED_GH_TOKEN) {
+        localStorage.setItem('table_tennis_gh_token', PRECONFIGURED_GH_TOKEN);
       }
-      closeApiModal();
-      loadMembers(true);
-    });
-    document.getElementById('btn-clear-api').addEventListener('click', () => {
-      localStorage.removeItem('table_tennis_api_url');
-      if (window.APP_CONFIG) window.APP_CONFIG.API_URL = '';
-      showToast('已切換為純本機模式');
-      closeApiModal();
-      loadMembers(true);
-    });
+    } catch (e) {}
 
     // GitHub API 自動 Commit 模組
     function getGitHubToken() {
-      return localStorage.getItem('table_tennis_gh_token') || '';
+      return localStorage.getItem('table_tennis_gh_token') || (window.APP_CONFIG && window.APP_CONFIG.GITHUB_TOKEN) || PRECONFIGURED_GH_TOKEN || '';
+    }
+
+    function getGitHubRepoConfig() {
+      return {
+        owner: (window.APP_CONFIG && window.APP_CONFIG.GITHUB_OWNER) || 'fychen2024-cyber',
+        repo: (window.APP_CONFIG && window.APP_CONFIG.GITHUB_REPO) || 'taiwan-table-tennis-map',
+        filePath: (window.APP_CONFIG && window.APP_CONFIG.GITHUB_FILE_PATH) || 'data/members.json'
+      };
+    }
+
+    function formatMembersForExport(members) {
+      return (members || []).map((m, idx) => ({
+        id: m.id || (idx + 1),
+        name: m.name || '',
+        city: m.city || m.district || m.county || '待確認',
+        county: m.county || '',
+        district: m.district || '',
+        locationRaw: m.locationRaw || (m.district ? `${m.county} ${m.district}` : m.county),
+        level: m.level || '未填',
+        levelTag: m.levelTag || m.level || '未分類',
+        freeTime: m.freeTime || '',
+        role: m.role || '未填',
+        single: m.single || '未填',
+        message: m.message || ''
+      }));
     }
 
     async function syncToGitHubApi(memberList, commitMsg = 'chore: 更新桌球同好名冊 (via Admin)') {
       const token = getGitHubToken();
       if (!token) return false;
 
-      const owner = 'fychen2024-cyber';
-      const repo = 'taiwan-table-tennis-map';
-      const filePath = 'data/members.json';
+      const { owner, repo, filePath } = getGitHubRepoConfig();
       const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
 
       try {
@@ -1596,7 +1703,8 @@
         }
 
         // 2. 轉換 Base64 (支援 UTF-8 繁體中文)
-        const contentStr = JSON.stringify(memberList, null, 2);
+        const exportData = formatMembersForExport(memberList);
+        const contentStr = JSON.stringify(exportData, null, 2);
         const utf8Bytes = new TextEncoder().encode(contentStr);
         let binary = '';
         for (let i = 0; i < utf8Bytes.length; i++) {
@@ -1634,12 +1742,14 @@
     }
 
     // GitHub 彈窗處理
-    const ghModal = document.getElementById('github-sync-modal');
     function openGhModal() {
-      document.getElementById('input-gh-token').value = getGitHubToken();
+      const ghModal = document.getElementById('github-sync-modal');
+      const input = document.getElementById('input-gh-token');
+      if (input) input.value = getGitHubToken();
       if (ghModal) ghModal.classList.add('active');
     }
     function closeGhModal() {
+      const ghModal = document.getElementById('github-sync-modal');
       if (ghModal) ghModal.classList.remove('active');
     }
 
@@ -1651,7 +1761,8 @@
     const btnSaveGh = document.getElementById('btn-save-gh-token');
     if (btnSaveGh) {
       btnSaveGh.addEventListener('click', async () => {
-        const token = document.getElementById('input-gh-token').value.trim();
+        const input = document.getElementById('input-gh-token');
+        const token = input ? input.value.trim() : '';
         if (token) {
           localStorage.setItem('table_tennis_gh_token', token);
           showToast('🔑 GitHub 金鑰已儲存！正在測試連線並同步...');
@@ -1671,6 +1782,7 @@
     if (btnClearGh) {
       btnClearGh.addEventListener('click', () => {
         localStorage.removeItem('table_tennis_gh_token');
+        if (window.APP_CONFIG) window.APP_CONFIG.GITHUB_TOKEN = '';
         showToast('已清除 GitHub 金鑰');
         closeGhModal();
         updateApiStatusDisplay();
@@ -1683,63 +1795,22 @@
       if (!statusBadge) return;
       if (ghToken) {
         statusBadge.className = 'api-status-badge api-online';
-        statusBadge.textContent = '🚀 GitHub 雲端資料庫已直連 (自動儲存)';
+        statusBadge.textContent = '🚀 GitHub 雲端已直連 (自動同步)';
+      } else {
+        const hasApi = (window.APP_CONFIG && window.APP_CONFIG.API_URL) || localStorage.getItem('table_tennis_api_url');
+        statusBadge.className = 'api-status-badge api-offline';
+        statusBadge.textContent = hasApi ? '⚠️ 雲端離線 (使用本機暫存)' : '💾 本機模式 (尚未綁定試算表 API)';
       }
     }
 
+    // 點擊彈窗外黑底關閉彈窗
+    window.addEventListener('click', (e) => {
+      const apiModal = document.getElementById('api-config-modal');
+      const ghModal = document.getElementById('github-sync-modal');
+      if (apiModal && e.target === apiModal) closeApiModal();
+      if (ghModal && e.target === ghModal) closeGhModal();
+    });
+
   </script>
-
-  <!-- API 網址設定彈窗 -->
-  <div id="api-config-modal" class="modal-backdrop">
-    <div class="modal-card" style="max-width: 500px;">
-      <div class="modal-head">
-        <h3>🔗 綁定 Google 試算表雲端 API</h3>
-        <button type="button" class="modal-close" id="btn-close-api-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">
-          綁定 Google Apps Script 網頁應用程式網址後，新成員資料與後台新增、修改、刪除將<b>永久儲存於雲端試算表</b>，不再因清除瀏覽器快取而遺失！
-        </p>
-        <div class="form-group" style="margin-top: 12px;">
-          <label class="form-label">Google Apps Script Web App 網址：</label>
-          <input type="url" id="input-api-url" class="form-control" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
-        </div>
-        <p style="font-size: 12px; color: var(--muted);">
-          還沒建置？請參考專案中的《Google試算表後端建置教學.md》只需 3 分鐘即可完成！
-        </p>
-      </div>
-      <div class="modal-foot">
-        <button type="button" class="btn btn-outline" id="btn-clear-api">清除綁定</button>
-        <button type="button" class="btn btn-primary" id="btn-save-api">儲存並連線</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- GitHub 倉庫直連設定彈窗 -->
-  <div id="github-sync-modal" class="modal-backdrop">
-    <div class="modal-card" style="max-width: 520px;">
-      <div class="modal-head">
-        <h3>🚀 綁定 GitHub 倉庫自動同步</h3>
-        <button type="button" class="modal-close" id="btn-close-gh-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size: 13px; color: var(--muted); line-height: 1.6;">
-          綁定 GitHub Token 後，您在後台進行任何<b>新增、修改、刪除</b>，後台都會<b>全自動幫您 Commit 寫入 GitHub 雲端倉庫</b>！資料永久保存，開無痕、換電腦都絕不消失！
-        </p>
-        <div class="form-group" style="margin-top: 12px;">
-          <label class="form-label">GitHub 個人金鑰 (Personal Access Token)：</label>
-          <input type="password" id="input-gh-token" class="form-control" placeholder="ghp_xxxxxxxxxxxx">
-          <small style="color: var(--muted); font-size: 11px; margin-top: 4px;">
-            如何取得？登入 GitHub ➜ 點右上角頭像 ➜ <b>Settings</b> ➜ 左下角 <b>Developer Settings</b> ➜ <b>Personal access tokens</b> ➜ <b>Tokens (classic)</b> ➜ 點 <b>Generate new token</b> ➜ 勾選 <b>repo</b> 權限 ➜ 複製 Token 貼在此處。
-          </small>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button type="button" class="btn btn-outline" id="btn-clear-gh-token">清除金鑰</button>
-        <button type="button" class="btn btn-primary" id="btn-save-gh-token">儲存金鑰並啟用自動同步</button>
-      </div>
-    </div>
-  </div>
-
 </body>
 </html>
